@@ -750,3 +750,24 @@ tr:hover td {
     margin-bottom: 22px;
   }
 }
+@media (max-width: 760px) {
+  .action {
+    display: grid;
+    grid-template-columns: 12px minmax(0, 1fr);
+    gap: 10px 12px;
+  }
+  .action .row-actions {
+    grid-column: 2;
+    margin: 0;
+    max-width: none;
+  }
+  .action .grow {
+    min-width: 0;
+  }
+  .action input[type="checkbox"] {
+    grid-column: 1;
+  }
+  .action input[type="checkbox"] + .dot {
+    display: none;
+  }
+}
