@@ -1,0 +1,17 @@
+TENANCY — TEAM WORKSPACE
+
+Open app: https://tenancy-agreement-tracker-app.vercel.app/
+Design preview: https://tenancy-agreement-tracker-app.vercel.app/mockups
+Public sample tracker: https://tenancy-agreement-tracker-app.vercel.app/demo
+
+1. Create your account and confirm your email.
+2. Create a team workspace. The three portfolio property names can be added automatically.
+3. Add units and tenants, then create tenancy agreements.
+4. Record signing, stamping and payment. Completing an agreement closes its open actions.
+5. In Team settings, enter a teammate's email, create an invitation, and share the copied link. They must sign in using that email.
+
+Admins manage invitations/roles and deletion. Members share the team's day-to-day work. Each team's records are private to its members.
+
+Open team-workspace-mockups.html in any browser for the self-contained desktop/mobile preview. It contains fictional sample tenants only. No real tenant files were available in the three portfolio folders to import.
+
+EMAIL SETUP: Custom SMTP was not enabled at the last verified inspection. The production sender must be configured to deliver signup/reset emails to ordinary team users. Production mailbox delivery is not yet verified.

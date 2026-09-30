@@ -1,0 +1,37 @@
+[
+  {
+    "path": "README.md",
+    "bytes": 2627,
+    "sha256": "9c5e92ec2e4e164575d966a9a10b15079e4b4f73efc6724249446648d813b5c8"
+  },
+  {
+    "path": "deliverables/START-HERE.txt",
+    "bytes": 1232,
+    "sha256": "54fc3494980f4d842e9a4de419eeeb94ac21d6614d96bbac03013b44c53a432c"
+  },
+  {
+    "path": "deliverables/team-workspace-mockups.html",
+    "bytes": 13130164,
+    "sha256": "e1ddcd2802e6d89a52e03fd3dae82f1fc7f287f778fe3aed9470463a483fe112"
+  },
+  {
+    "path": "deliverables/tenancy-dashboard.png",
+    "bytes": 131618,
+    "sha256": "feb3a79f29f83700e535449d27161f6404cded9522ebec10bb05ef7c25ffd846"
+  },
+  {
+    "path": "design-inputs/stitch_tenancy_agreement_tracker.zip",
+    "bytes": 5968815,
+    "sha256": "7ab0f478a0a40d7f22618840ee7e7a05970ed39c79b60b7430fcef244d318232"
+  },
+  {
+    "path": "historical/tenancy-tracker-source.zip",
+    "bytes": 101390,
+    "sha256": "4359f419dbcb87ea9aed4dd751f652692c75f6f10998f63559077a2971f19d04"
+  },
+  {
+    "path": "skills/tenancy-agreement-tracker/SKILL.md",
+    "bytes": 6491,
+    "sha256": "4e8a621b292ec7d3b834caa8a83ce7caaa99d122a1dfbff0ef0f41886d892ba8"
+  }
+]

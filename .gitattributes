@@ -1,0 +1,2 @@
+# Preserve original backup bytes so manifest SHA-256 checksums survive cloning.
+backups/** -text
