@@ -2,6 +2,51 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
+import { prepareManualAgreement } from "../lib/data/manual.ts";
+
+test("manual tenant/unit entry reuses matches only within the selected property", () => {
+  const store = {
+    properties: [],
+    tenants: [{ id: "t", name: "Contact", company_name: "Acme" }],
+    units: [{ id: "u", property_id: "p1", unit_number: "G-01" }],
+    tenancy_agreements: [],
+    outstanding_actions: [],
+  };
+  const plan = prepareManualAgreement(
+    { tenant_name: " acme ", unit_number: "g-01", property_id: "p1" },
+    store,
+  );
+  assert.equal(plan.row.tenant_id, "t");
+  assert.equal(plan.row.unit_id, "u");
+  assert.equal(plan.createTenant, false);
+  assert.equal(plan.createUnit, false);
+  assert.equal("tenant_name" in plan.row, false);
+  assert.equal("unit_number" in plan.row, false);
+  const fresh = prepareManualAgreement(
+    { tenant_name: "New Tenant", unit_number: "G-01", property_id: "p2" },
+    store,
+  );
+  assert.equal(fresh.createTenant, true);
+  assert.equal(fresh.createUnit, true);
+  assert.equal(fresh.unit.property_id, "p2");
+  assert.throws(
+    () => prepareManualAgreement({ tenant_name: " ", unit_number: "1" }, store),
+    /Enter the tenant/,
+  );
+  assert.throws(
+    () =>
+      prepareManualAgreement({ tenant_name: "Acme", unit_number: " " }, store),
+    /Enter the unit/,
+  );
+  assert.throws(
+    () =>
+      prepareManualAgreement(
+        { tenant_name: "Acme", unit_number: "1" },
+        { ...store, tenants: [...store.tenants, { id: "t2", name: "Acme" }] },
+      ),
+    /More than one tenant/,
+  );
+});
 import {
   stampingDue,
   overdue,

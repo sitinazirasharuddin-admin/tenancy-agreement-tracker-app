@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
-import { loadStore, saveRow, deleteRow } from "@/lib/data";
+import { loadStore, saveRow, deleteRow, saveManualAgreement } from "@/lib/data";
 import {
   emptyStore,
   statuses,
@@ -245,10 +245,12 @@ export default function Tracker({
       return [
         { key: "ta_reference", title: "Agreement reference", required: true },
         {
-          key: "tenant_id",
+          key: editor?.row.id ? "tenant_id" : "tenant_name",
           title: "Tenant",
           required: true,
-          options: references("tenants", (r) => text(r.company_name || r.name)),
+          options: editor?.row.id
+            ? references("tenants", (r) => text(r.company_name || r.name))
+            : undefined,
         },
         {
           key: "property_id",
@@ -257,12 +259,14 @@ export default function Tracker({
           options: references("properties", (r) => text(r.name)),
         },
         {
-          key: "unit_id",
+          key: editor?.row.id ? "unit_id" : "unit_number",
           title: "Unit",
           required: true,
-          options: store.units
-            .filter((u) => u.property_id === property)
-            .map((u) => ({ value: u.id, title: text(u.unit_number) })),
+          options: editor?.row.id
+            ? store.units
+                .filter((u) => u.property_id === property)
+                .map((u) => ({ value: u.id, title: text(u.unit_number) }))
+            : undefined,
         },
         { key: "person_in_charge", title: "Person in charge", required: true },
         {
@@ -384,7 +388,10 @@ export default function Tracker({
     }
     setBusy(true);
     try {
-      const saved = await saveRow(editor.table, row, store, teamId);
+      const saved =
+        editor.table === "tenancy_agreements" && !editor.row.id
+          ? await saveManualAgreement(row, teamId)
+          : await saveRow(editor.table, row, store, teamId);
       setStore(await loadStore(teamId));
       setNotice(`${names[editor.table]} saved.`);
       if (editor.table === "tenancy_agreements") setSelected(saved.id);

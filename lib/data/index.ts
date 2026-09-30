@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { prepareManualAgreement } from "./manual";
 import {
   emptyStore,
   stampingDue,
@@ -59,6 +60,38 @@ export async function saveRow(
     throw new Error(`Failed to save — check connection. ${error.message}`);
   return data as Row;
 }
+export async function saveManualAgreement(
+  input: Partial<Row>,
+  teamId?: string,
+) {
+  // Reload scoped records so a retry reuses any tenant/unit created by a prior attempt.
+  const store = await loadStore(teamId);
+  const plan = prepareManualAgreement(input, store);
+  // Validate all agreement fields before creating its related records.
+  validateAgreement(plan.row, plan.validationStore);
+  if (plan.createTenant) {
+    const tenant = await saveRow(
+      "tenants",
+      { name: plan.tenant.name },
+      store,
+      teamId,
+    );
+    store.tenants.push(tenant);
+    plan.row.tenant_id = tenant.id;
+  }
+  if (plan.createUnit) {
+    const unit = await saveRow(
+      "units",
+      { unit_number: plan.unit.unit_number, property_id: input.property_id },
+      store,
+      teamId,
+    );
+    store.units.push(unit);
+    plan.row.unit_id = unit.id;
+  }
+  return saveRow("tenancy_agreements", plan.row, store, teamId);
+}
+
 export async function deleteRow(
   table: Table,
   id: string,
