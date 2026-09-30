@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { loadStore, saveRow, deleteRow } from "@/lib/data";
 import {
   emptyStore,
@@ -60,6 +60,35 @@ export default function Home() {
   const [actionFilter, setActionFilter] = useState("");
   const [actionState, setActionState] = useState("open");
   const [checked, setChecked] = useState<string[]>([]);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const dialogRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!editor) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !busy) setEditor(null);
+      if (event.key !== "Tab") return;
+      const elements = Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          "button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled)",
+        ) ?? [],
+      );
+      const first = elements[0],
+        last = elements.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      previous?.focus();
+    };
+  }, [editor, busy]);
   async function refresh() {
     setLoading(true);
     setError("");
@@ -561,7 +590,7 @@ export default function Home() {
   }
   return (
     <div className="shell">
-      <aside>
+      <aside inert={!!editor}>
         <a className="brand" href="/">
           ▦{" "}
           <span>
@@ -569,14 +598,24 @@ export default function Home() {
           </span>
         </a>
         <div className="nav-title">WORKSPACE</div>
-        <nav>
+        <button
+          className="mobile-menu"
+          aria-expanded={menuOpen}
+          aria-controls="workspace-nav"
+          onClick={() => setMenuOpen(!menuOpen)}
+        >
+          ☰ Menu
+        </button>
+        <nav id="workspace-nav" className={menuOpen ? "menu-open" : ""}>
           {["Dashboard", "Agreements", "Properties", "Tenants", "Actions"].map(
             (s, i) => (
               <button
                 key={s}
+                aria-label={s}
                 className={section === s && !current ? "active" : ""}
                 onClick={() => {
                   setSection(s);
+                  setMenuOpen(false);
                   setSelected(null);
                   setNotice("");
                 }}
@@ -600,7 +639,7 @@ export default function Home() {
           <small>Shared sample data · No login required</small>
         </div>
       </aside>
-      <main>
+      <main inert={!!editor}>
         <div className="topbar">
           <span>
             Workspace{" "}
@@ -1046,6 +1085,7 @@ export default function Home() {
         >
           <section
             className="modal"
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="editor-title"

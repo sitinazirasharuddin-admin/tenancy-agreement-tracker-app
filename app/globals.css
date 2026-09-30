@@ -771,3 +771,23 @@ tr:hover td {
     display: none;
   }
 }
+.mobile-menu {
+  display: none;
+}
+@media (max-width: 760px) {
+  aside {
+    position: relative;
+  }
+  .mobile-menu {
+    display: block;
+    position: absolute;
+    right: 16px;
+    top: 18px;
+  }
+  nav {
+    display: none;
+  }
+  nav.menu-open {
+    display: flex;
+  }
+}

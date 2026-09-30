@@ -1,41 +1,37 @@
-# vibe-stack-supabase
+# Tenancy Agreement Tracker
 
-Next.js 15 + Supabase starter for shipping vibe-coded apps fast. Clone, provision, build.
+A shared, login-free leasing demo built with Next.js and Supabase. Use sample data only until owner-scoped authentication is implemented. The homepage is the working application.
 
-## Stack
+## Run against the provisioned Supabase project
 
-| Layer | Choice |
-|---|---|
-| Framework | Next.js 15 (App Router, React 19, Server Actions) |
-| Language | TypeScript strict |
-| Styles | Tailwind CSS v4 (CSS-first, no config file) |
-| Auth + DB | Supabase (`@supabase/ssr`) |
-| Package manager | Bun |
-| Deploy | Vercel |
+1. Use Node 22.18+ and run `npm ci`.
+2. Authenticate Vercel CLI, run `vercel link`, select the existing project, and run `vercel env pull .env.local`.
+3. Verify the migration history and tables in that project's Supabase database. Apply `0001_init.sql` only if it is not already applied. Preserve existing data.
+4. Apply `supabase/migrations/0002_workflow_integrity.sql` as a new migration. This is required for atomic agreement completion, linked action deletion, integrity checks, and auditing. If existing data violates a new constraint, resolve the conflict before applying; do not reset the database.
+5. Run `npm run dev`.
 
-## Quick start
+Only `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are required for the tracker. Never expose a service-role key in frontend variables. No payment gateway is part of this app.
 
-```bash
-bun install
-cp .env.example .env.local   # fill in your Supabase keys
-bun dev
-```
+## Core job
 
-Open http://localhost:3000. Edit `app/page.tsx` to start building.
+Create a property, unit and tenant, or select existing sample records. Create an agreement, send it for signing, record the signing date, and mark it signed. The stamping deadline is calculated as 30 calendar days after signing. Add a follow-up such as "Submit to LHDN". Record the submission date and fee, mark payment paid or N/A, and complete the agreement. Completion explicitly confirms closing all linked actions, then updates the agreement and actions in one database transaction.
 
-## Provisioning a new project
+Dashboard filters support status, property, staff and reference/tenant search. Actions are ranked by deterministic urgency. CSV exports respect active filters. Referenced properties, units and tenants cannot be deleted until dependent records are removed.
 
-Use the `/new-vibe-project <name>` skill (see `claude-dotfiles` repo) which:
-1. Clones this template and renames it
-2. Creates a new GitHub repo and pushes
-3. Creates a Supabase project and injects URL + anon key
-4. Creates a Vercel project linked to the GitHub repo
-5. Triggers first deploy and returns the preview URL
+## Verification
 
-## Working with AI
+- `npm run typecheck`
+- `npm run build`
+- `npm test`: real PostgreSQL (PGlite) migration tests, calendar boundaries, workflow integrity, completion and audit checks.
+- Browser regression tests use a test-only local PostgreSQL adapter, not the hosted Supabase service. Run `npm run test:db`, then start Next with `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321` and `NEXT_PUBLIC_SUPABASE_ANON_KEY=local-postgres-test-only` in the process environment. Run `npm run test:browser` and `node tests/management-smoke.mjs`. Microsoft Edge is used headlessly.
+- The local test adapter is under `tests/`; production code has no fallback database or fabricated-success mode.
 
-See [CLAUDE.md](CLAUDE.md) for conventions. This repo is pre-wired for gstack — start with `/office-hours`.
+Live verification must separately repeat `docs/TEST_PLAN.md` after migrations are applied and the Vercel deployment is ready. Local tests do not establish hosted Supabase or deployment readiness.
 
-## Switching to Neon
+## Deployment
 
-If you need Postgres without Supabase (e.g. prefer Drizzle ORM + Clerk for auth), a `vibe-stack-neon` variant is planned. For now: fork this and swap `@supabase/ssr` for `drizzle-orm` + `@neondatabase/serverless`, add Clerk or NextAuth.
+Commit as `sitinazirasharuddin-admin <335818130+sitinazirasharuddin-admin@users.noreply.github.com>` and push to `main`; Vercel builds from GitHub. Do not use `vercel deploy`.
+
+## Scope
+
+Sprints 1–3 implement the v1 demo workflow and management screens. Sprint 4 is the later lock-down stage: authenticated private ownership and RLS isolation must be completed and tested before storing real tenant information. The current shared-demo permissions are intentional, not user isolation.

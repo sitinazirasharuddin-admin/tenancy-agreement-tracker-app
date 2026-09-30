@@ -53,3 +53,12 @@ do $$ declare t text; begin
 end $$;
 drop policy if exists audit_logs_v1_write on audit_logs;
 revoke insert, update, delete on audit_logs from anon, authenticated;
+-- Keep a referenced unit in its original property, so linked agreements remain valid.
+create or replace function public.protect_unit_property() returns trigger language plpgsql set search_path = public as $$
+begin
+  if new.property_id is distinct from old.property_id and exists(select 1 from tenancy_agreements where unit_id = old.id) then
+    raise exception 'This unit is linked to an agreement; its property cannot be changed';
+  end if;
+  return new;
+end $$;
+create trigger protect_unit_property before update on units for each row execute function protect_unit_property();
