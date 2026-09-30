@@ -35,3 +35,7 @@ Commit as `sitinazirasharuddin-admin <335818130+sitinazirasharuddin-admin@users.
 ## Scope
 
 Sprints 1–3 implement the v1 demo workflow and management screens. Sprint 4 is the later lock-down stage: authenticated private ownership and RLS isolation must be completed and tested before storing real tenant information. The current shared-demo permissions are intentional, not user isolation.
+
+## Hosted database verification (2026-09-30)
+
+The existing five seed agreements were verified before applying `0002_workflow_integrity.sql` to the provisioned project. The hosted anonymous-client regression (`node --env-file=.env.local tests/live-db.mjs`) passed for creation, signing deadline calculation, rejecting premature completion, atomic action closure, audit entries, and cascading removal of its generated QA records. Existing seed records were preserved.
