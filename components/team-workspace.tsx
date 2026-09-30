@@ -30,10 +30,27 @@ export default function TeamWorkspace() {
   async function refreshTeams(id: string) {
     const result = await listTeams(id);
     setTeams(result);
-    setSelected((previous) =>
-      previous ? (result.find((t) => t.id === previous.id) ?? null) : null,
+    let remembered: string | null = null;
+    try {
+      remembered = localStorage.getItem(`tenancy-team:${id}`);
+    } catch {
+      /* Storage may be disabled. */
+    }
+    setSelected(
+      (previous) =>
+        result.find((t) => t.id === (previous?.id ?? remembered)) ?? null,
     );
     return result;
+  }
+  function chooseTeam(team: Team | null) {
+    setSelected(team);
+    if (!user) return;
+    try {
+      if (team) localStorage.setItem(`tenancy-team:${user.id}`, team.id);
+      else localStorage.removeItem(`tenancy-team:${user.id}`);
+    } catch {
+      /* Team selection works even when browser storage is disabled. */
+    }
   }
   useEffect(() => {
     const db = createClient();
@@ -128,6 +145,14 @@ export default function TeamWorkspace() {
           "If this account exists, a password reset link has been sent.",
         );
       if (mode === "password") {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("recovery");
+        url.searchParams.delete("auth_error");
+        window.history.replaceState(
+          {},
+          "",
+          url.pathname + url.search + url.hash,
+        );
         setMode("login");
         setNotice("Password updated.");
       }
@@ -161,7 +186,7 @@ export default function TeamWorkspace() {
         }
       }
       const result = await refreshTeams(user!.id);
-      setSelected(result.find((t) => t.id === id) ?? null);
+      chooseTeam(result.find((t) => t.id === id) ?? null);
     });
   }
   async function openSettings() {
@@ -186,7 +211,7 @@ export default function TeamWorkspace() {
         invite_token: inviteCode.trim(),
       });
       const result = await refreshTeams(user!.id);
-      setSelected(result.find((t) => t.id === id) ?? null);
+      chooseTeam(result.find((t) => t.id === id) ?? null);
       setInviteCode("");
       sessionStorage.removeItem("tenancy-invite");
       window.history.replaceState({}, "", window.location.pathname);
@@ -345,7 +370,7 @@ export default function TeamWorkspace() {
           teamName={selected.name}
           teamRole={selected.role}
           onTeamSettings={() => void openSettings()}
-          onSwitchTeam={() => setSelected(null)}
+          onSwitchTeam={() => chooseTeam(null)}
           onSignOut={() => void signOut()}
         />
       </>
@@ -540,7 +565,7 @@ export default function TeamWorkspace() {
                   className="team-card"
                   key={team.id}
                   onClick={() => {
-                    setSelected(team);
+                    chooseTeam(team);
                     setSettings(false);
                     setError("");
                   }}

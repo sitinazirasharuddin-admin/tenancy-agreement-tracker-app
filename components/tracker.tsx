@@ -9,6 +9,7 @@ import {
   stampingDue,
   overdue,
   urgency,
+  missingWorkflowDetails,
   type Row,
   type Store,
   type Table,
@@ -101,6 +102,7 @@ export default function Tracker({
     row: Partial<Row>;
   } | null>(null);
   const [formError, setFormError] = useState("");
+  const [workflowTarget, setWorkflowTarget] = useState<string | null>(null);
   const [property, setProperty] = useState("");
   const [signing, setSigning] = useState("");
   const [query, setQuery] = useState("");
@@ -175,6 +177,7 @@ export default function Tracker({
     store.outstanding_actions.filter((a) => a.ta_id === id && !a.completed);
   const current = store.tenancy_agreements.find((t) => t.id === selected);
   function edit(table: Table, row: Partial<Row> = {}) {
+    setWorkflowTarget(null);
     setFormError("");
     setProperty(text(row.property_id));
     setSigning(text(row.signing_date));
@@ -217,6 +220,11 @@ export default function Tracker({
     }
   }
   async function transition(ta: Row, next: string) {
+    if (missingWorkflowDetails(ta, next).length) {
+      edit("tenancy_agreements", { ...ta, status: next });
+      setWorkflowTarget(next);
+      return;
+    }
     if (
       next === "completed" &&
       !(await confirmAction(
@@ -348,10 +356,19 @@ export default function Tracker({
       row[f.key] =
         value === "" ? null : f.type === "number" ? Number(value) : value;
     }
+    if (workflowTarget) {
+      const missing = missingWorkflowDetails(row, text(row.status));
+      if (missing.length) {
+        setFormError(
+          `Complete these details before saving: ${missing.map(label).join(", ")}.`,
+        );
+        return;
+      }
+    }
     if (
       editor.table === "tenancy_agreements" &&
       row.status === "completed" &&
-      editor.row.status !== "completed" &&
+      find("tenancy_agreements", editor.row.id)?.status !== "completed" &&
       !(await confirmAction(
         "Complete this agreement and all linked outstanding actions?",
       ))
@@ -1329,6 +1346,16 @@ export default function Tracker({
               </button>
             </div>
             <form onSubmit={submit}>
+              {workflowTarget && (
+                <div className="alert workflow-guidance" role="status">
+                  To move this agreement to{" "}
+                  {label(workflowTarget).toLowerCase()}, complete:{" "}
+                  {missingWorkflowDetails(editor.row, workflowTarget)
+                    .map(label)
+                    .join(", ")}
+                  . Review the details, then save.
+                </div>
+              )}
               <div className="form-grid">
                 {fields(editor.table).map((f, i) => (
                   <label
@@ -1340,7 +1367,16 @@ export default function Tracker({
                     {f.options ? (
                       <select
                         name={f.key}
-                        required={f.required}
+                        required={
+                          f.required ||
+                          !!(
+                            workflowTarget &&
+                            missingWorkflowDetails(
+                              editor.row,
+                              workflowTarget,
+                            ).includes(f.key)
+                          )
+                        }
                         defaultValue={text(
                           editor.row[f.key] ||
                             ([
@@ -1375,10 +1411,27 @@ export default function Tracker({
                       />
                     ) : (
                       <input
-                        autoFocus={i === 0}
+                        autoFocus={
+                          workflowTarget
+                            ? f.key ===
+                              missingWorkflowDetails(
+                                editor.row,
+                                workflowTarget,
+                              )[0]
+                            : i === 0
+                        }
                         name={f.key}
                         type={f.type || "text"}
-                        required={f.required}
+                        required={
+                          f.required ||
+                          !!(
+                            workflowTarget &&
+                            missingWorkflowDetails(
+                              editor.row,
+                              workflowTarget,
+                            ).includes(f.key)
+                          )
+                        }
                         defaultValue={text(editor.row[f.key])}
                         step={f.type === "number" ? "0.01" : undefined}
                         min={f.type === "number" ? "0" : undefined}

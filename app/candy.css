@@ -6,6 +6,11 @@
   --green: #b81c7d;
   --canvas: #fef7ff;
 }
+.workflow-guidance {
+  background: #f4eaff;
+  color: #71479a;
+  border: 1px solid #e4ccfa;
+}
 body {
   font-family: "DM Sans", "Segoe UI", Arial, sans-serif;
 }

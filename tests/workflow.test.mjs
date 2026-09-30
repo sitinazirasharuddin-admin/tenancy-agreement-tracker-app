@@ -2,7 +2,42 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
-import { stampingDue, overdue, urgency } from "../lib/data/domain.ts";
+import {
+  stampingDue,
+  overdue,
+  urgency,
+  missingWorkflowDetails,
+} from "../lib/data/domain.ts";
+
+test("guided workflow collects missing details and accepts zero fees and N/A payment", () => {
+  assert.deepEqual(missingWorkflowDetails({}, "pending_signing"), []);
+  assert.deepEqual(missingWorkflowDetails({}, "signed"), ["signing_date"]);
+  assert.deepEqual(
+    missingWorkflowDetails(
+      { signing_date: "2026-09-30" },
+      "stamping_submitted",
+    ),
+    ["stamping_submission_date", "stamping_fee"],
+  );
+  const stamped = {
+    signing_date: "2026-09-30",
+    stamping_submission_date: "2026-09-30",
+    stamping_fee: 0,
+    payment_status: "pending",
+  };
+  assert.deepEqual(missingWorkflowDetails(stamped, "payment_pending"), []);
+  assert.deepEqual(missingWorkflowDetails(stamped, "completed"), [
+    "payment_status",
+  ]);
+  assert.deepEqual(
+    missingWorkflowDetails({ ...stamped, payment_status: "na" }, "completed"),
+    [],
+  );
+  assert.deepEqual(
+    missingWorkflowDetails({ ...stamped, payment_status: "paid" }, "completed"),
+    [],
+  );
+});
 
 test("30 calendar days, including leap year and year boundary", () => {
   assert.equal(stampingDue("2024-02-01"), "2024-03-02");

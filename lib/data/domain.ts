@@ -18,6 +18,36 @@ export type Table =
   | "tenants"
   | "outstanding_actions";
 export type Store = Record<Table, Row[]>;
+export function missingWorkflowDetails(
+  row: Partial<Row>,
+  next: string,
+): string[] {
+  const missing: string[] = [];
+  if (
+    statuses.indexOf(next as (typeof statuses)[number]) >=
+      statuses.indexOf("signed") &&
+    !row.signing_date
+  )
+    missing.push("signing_date");
+  if (
+    statuses.indexOf(next as (typeof statuses)[number]) >=
+    statuses.indexOf("stamping_submitted")
+  ) {
+    if (!row.stamping_submission_date) missing.push("stamping_submission_date");
+    if (
+      row.stamping_fee === null ||
+      row.stamping_fee === undefined ||
+      row.stamping_fee === ""
+    )
+      missing.push("stamping_fee");
+  }
+  if (
+    next === "completed" &&
+    !["paid", "na"].includes(String(row.payment_status))
+  )
+    missing.push("payment_status");
+  return missing;
+}
 export const emptyStore: Store = {
   tenancy_agreements: [],
   properties: [],
