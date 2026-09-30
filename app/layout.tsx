@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "vibe-stack-supabase",
-  description: "Next.js + Supabase starter",
+  title: "Tenancy | Agreement Tracker",
+  description: "Track tenancy agreements from preparation to signing, stamping and completion.",
 };
 
 export default function RootLayout({
@@ -17,3 +17,4 @@ export default function RootLayout({
     </html>
   );
 }
+
