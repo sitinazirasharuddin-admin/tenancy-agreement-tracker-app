@@ -45,12 +45,33 @@ function Cards() {
     </div>
   );
 }
+function Portfolio() {
+  return (
+    <div className="preview-portfolio">
+      {[
+        ["the-five", "The five"],
+        ["the-stories", "The Stories of Taman Tunku"],
+        ["menara-millenium", "Menara Millenium"],
+      ].map(([file, name]) => (
+        <article key={file}>
+          <img
+            src={`/properties/${file}.png`}
+            alt={name}
+            width={768}
+            height={512}
+          />
+          <strong>{name}</strong>
+        </article>
+      ))}
+    </div>
+  );
+}
 export default function Mockups() {
   return (
     <div className="mockup-page">
       <div className="mockup-heading">
         <p className="eyebrow">DESIGN PREVIEW · SAMPLE DATA</p>
-        <h1>Your team workspace, everywhere.</h1>
+        <h1>Your workspace, with a little Candy.</h1>
         <p>
           Private teams, a clear portfolio overview, and agreements designed for
           the screen in your hand.
@@ -95,6 +116,7 @@ export default function Mockups() {
                   Completed<strong>28</strong>
                 </div>
               </div>
+              <Portfolio />
               <div className="preview-panel">
                 <h4>
                   Tenancy agreements <small>Across your portfolio</small>
@@ -130,6 +152,7 @@ export default function Mockups() {
                   Attention<strong>3</strong>
                 </div>
               </div>
+              <Portfolio />
               <div className="preview-search">⌕ Search agreements</div>
               <Cards />
             </div>

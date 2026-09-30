@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import Image from "next/image";
 import { loadStore, saveRow, deleteRow } from "@/lib/data";
 import {
   emptyStore,
@@ -22,6 +23,41 @@ type Field = {
 const options = (values: readonly string[]) =>
   values.map((value) => ({ value, title: label(value) }));
 const text = (v: unknown) => String(v ?? "");
+function propertyPhoto(name: unknown) {
+  const value = text(name).toLowerCase();
+  if (value.includes("five")) return "/properties/the-five.png";
+  if (value.includes("stories")) return "/properties/the-stories.png";
+  if (value.includes("millen")) return "/properties/menara-millenium.png";
+  return null;
+}
+function PropertyPhoto({
+  name,
+  className = "",
+}: {
+  name: unknown;
+  className?: string;
+}) {
+  const src = propertyPhoto(name);
+  return src ? (
+    <Image
+      className={`property-photo ${className}`}
+      src={src}
+      alt={text(name)}
+      loading={className === "agreement-photo" ? "lazy" : "eager"}
+      width={768}
+      height={512}
+      sizes={
+        className === "agreement-photo"
+          ? "44px"
+          : "(max-width: 760px) 80vw, 400px"
+      }
+    />
+  ) : (
+    <div className={`property-placeholder ${className}`} aria-hidden="true">
+      ▦
+    </div>
+  );
+}
 const names: Record<Table, string> = {
   tenancy_agreements: "Agreement",
   properties: "Property",
@@ -560,6 +596,10 @@ export default function Tracker({
               key={ta.id}
               onClick={() => setSelected(ta.id)}
             >
+              <PropertyPhoto
+                name={find("properties", ta.property_id)?.name}
+                className="agreement-photo"
+              />
               <div className="card-top">
                 <strong>{text(ta.ta_reference)}</strong>
                 <span className={`badge ${ta.status}`}>{label(ta.status)}</span>
@@ -1011,6 +1051,62 @@ export default function Tracker({
                       </button>
                     ))}
                   </div>
+                  {!!store.properties.length && (
+                    <section
+                      className="featured-properties"
+                      aria-label="Featured properties"
+                    >
+                      <div className="featured-heading">
+                        <h2>
+                          Featured properties{" "}
+                          <span className="count">
+                            {store.properties.length}
+                          </span>
+                        </h2>
+                        <button
+                          className="link"
+                          onClick={() => setSection("Properties")}
+                        >
+                          Browse all →
+                        </button>
+                      </div>
+                      <div className="property-strip">
+                        {store.properties.map((p) => (
+                          <button
+                            className="property-card"
+                            key={p.id}
+                            onClick={() => {
+                              setFilterProperty(p.id);
+                              setStatus("");
+                              setQuery("");
+                              setPic("");
+                              setSection("Agreements");
+                            }}
+                            aria-label={`View agreements for ${text(p.name)}`}
+                          >
+                            <PropertyPhoto name={p.name} />
+                            <div>
+                              <h3>{text(p.name)}</h3>
+                              <small>
+                                {
+                                  store.units.filter(
+                                    (u) => u.property_id === p.id,
+                                  ).length
+                                }{" "}
+                                units ·{" "}
+                                {
+                                  store.tenancy_agreements.filter(
+                                    (t) => t.property_id === p.id,
+                                  ).length
+                                }{" "}
+                                agreements
+                              </small>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  )}
                 </>
               )}
               {["Dashboard", "Agreements"].includes(section) && (
@@ -1131,6 +1227,12 @@ export default function Tracker({
                       )}
                       {store[table].map((r) => (
                         <article className="entity" key={r.id}>
+                          {table === "properties" && (
+                            <PropertyPhoto
+                              name={r.name}
+                              className="entity-photo"
+                            />
+                          )}
                           <div className="entity-icon">
                             {table === "tenants" ? "◎" : "▦"}
                           </div>
@@ -1168,6 +1270,38 @@ export default function Tracker({
           )}
         </div>
       </main>
+      <nav
+        className="mobile-bottom-nav"
+        aria-label="Quick navigation"
+        inert={!!editor}
+      >
+        {[
+          ["Dashboard", "◫", "Home"],
+          ["Agreements", "▤", "Agreements"],
+          ["Actions", "☑", "Actions"],
+          ["Properties", "▦", "Properties"],
+        ].map(([target, icon, title]) => (
+          <button
+            key={target}
+            aria-label={`Go to ${target.toLowerCase()}`}
+            aria-current={section === target && !current ? "page" : undefined}
+            className={section === target && !current ? "active" : ""}
+            onClick={() => {
+              setSection(target);
+              setSelected(null);
+              setMenuOpen(false);
+            }}
+          >
+            <span aria-hidden="true">{icon}</span>
+            {title}
+          </button>
+        ))}
+        {teamId && (
+          <button onClick={onTeamSettings}>
+            <span aria-hidden="true">⚙</span>Settings
+          </button>
+        )}
+      </nav>
       {editor && (
         <div
           className="modal-backdrop"

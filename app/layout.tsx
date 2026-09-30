@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./candy.css";
 
 export const metadata: Metadata = {
   title: "Tenancy | Agreement Tracker",
-  description: "Track tenancy agreements from preparation to signing, stamping and completion.",
+  description:
+    "Track tenancy agreements from preparation to signing, stamping and completion.",
 };
 
 export default function RootLayout({
@@ -17,4 +19,3 @@ export default function RootLayout({
     </html>
   );
 }
-
