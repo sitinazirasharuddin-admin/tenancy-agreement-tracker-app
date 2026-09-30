@@ -15,7 +15,7 @@ async function save(name) {
   await page.getByRole("dialog").waitFor({ state: "hidden" });
 }
 try {
-  await page.goto("http://localhost:3000");
+  await page.goto("http://localhost:3000/demo");
   await page.getByRole("table").waitFor();
   await nav("Properties").click();
   await page
@@ -93,6 +93,10 @@ try {
     .getByRole("button", { name: "Delete", exact: true })
     .click();
   await page
+    .getByRole("dialog", { name: "Confirm change" })
+    .getByRole("button", { name: "Confirm", exact: true })
+    .click();
+  await page
     .getByRole("status")
     .filter({ hasText: "Agreement deleted" })
     .waitFor();
@@ -101,17 +105,27 @@ try {
     .locator(".entity")
     .filter({ has: page.getByRole("heading", { name: "QA-01", exact: true }) });
   await unit.getByRole("button", { name: "Delete", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "Confirm change" })
+    .getByRole("button", { name: "Confirm", exact: true })
+    .click();
   await unit.waitFor({ state: "hidden" });
-  const prop = page
-    .locator(".entity")
-    .filter({
-      has: page.getByRole("heading", { name: property, exact: true }),
-    });
+  const prop = page.locator(".entity").filter({
+    has: page.getByRole("heading", { name: property, exact: true }),
+  });
   await prop.getByRole("button", { name: "Delete", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "Confirm change" })
+    .getByRole("button", { name: "Confirm", exact: true })
+    .click();
   await prop.waitFor({ state: "hidden" });
   await nav("Tenants").click();
   const tenant = page.locator(".entity").filter({ hasText: company });
   await tenant.getByRole("button", { name: "Delete", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "Confirm change" })
+    .getByRole("button", { name: "Confirm", exact: true })
+    .click();
   await tenant.waitFor({ state: "hidden" });
   await nav("Dashboard").click();
   await page.setViewportSize({ width: 390, height: 844 });

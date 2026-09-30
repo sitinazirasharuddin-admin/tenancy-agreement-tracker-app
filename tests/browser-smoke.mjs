@@ -8,7 +8,7 @@ const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
 await mkdir("../qa", { recursive: true });
 try {
-  await page.goto("http://localhost:3000");
+  await page.goto("http://localhost:3000/demo");
   await page
     .getByRole("table")
     .getByRole("button", { name: "TA-2024-015", exact: true })
@@ -96,6 +96,10 @@ try {
     .selectOption("completed");
   await page
     .getByRole("button", { name: "Save agreement", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Confirm change" })
+    .getByRole("button", { name: "Confirm", exact: true })
     .click();
   await page.getByRole("dialog").waitFor({ state: "hidden" });
   assert.equal(await page.locator(".panel-heading h2 .count").innerText(), "0");

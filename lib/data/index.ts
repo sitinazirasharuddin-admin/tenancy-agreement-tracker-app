@@ -17,13 +17,15 @@ function db() {
     );
   return createClient();
 }
-export async function loadStore(): Promise<Store> {
+export async function loadStore(teamId?: string): Promise<Store> {
   const entries = await Promise.all(
     (Object.keys(emptyStore) as Table[]).map(async (table) => {
-      const { data, error } = await db()
+      let query = db()
         .from(table)
         .select("*")
         .order("created_at", { ascending: false });
+      query = teamId ? query.eq("team_id", teamId) : query.is("team_id", null);
+      const { data, error } = await query;
       if (error)
         throw new Error(
           `Unable to load ${table.replaceAll("_", " ")}: ${error.message}`,
@@ -33,8 +35,13 @@ export async function loadStore(): Promise<Store> {
   );
   return Object.fromEntries(entries) as Store;
 }
-export async function saveRow(table: Table, input: Partial<Row>, store: Store) {
-  const row = { ...input };
+export async function saveRow(
+  table: Table,
+  input: Partial<Row>,
+  store: Store,
+  teamId?: string,
+) {
+  const row: Partial<Row> = { ...input, team_id: teamId ?? null };
   delete row.created_at;
   delete row.user_id;
   if (table === "tenancy_agreements") {
@@ -52,7 +59,12 @@ export async function saveRow(table: Table, input: Partial<Row>, store: Store) {
     throw new Error(`Failed to save — check connection. ${error.message}`);
   return data as Row;
 }
-export async function deleteRow(table: Table, id: string, store: Store) {
+export async function deleteRow(
+  table: Table,
+  id: string,
+  store: Store,
+  teamId?: string,
+) {
   if (
     table === "properties" &&
     (store.units.some((r) => r.property_id === id) ||
@@ -71,11 +83,9 @@ export async function deleteRow(table: Table, id: string, store: Store) {
     store.tenancy_agreements.some((r) => r.tenant_id === id)
   )
     throw new Error("This tenant is linked to an agreement.");
-  const { error, data } = await db()
-    .from(table)
-    .delete()
-    .eq("id", id)
-    .select("id");
+  let query = db().from(table).delete().eq("id", id);
+  query = teamId ? query.eq("team_id", teamId) : query.is("team_id", null);
+  const { error, data } = await query.select("id");
   if (error) throw new Error(`Failed to delete: ${error.message}`);
   if (!data?.length)
     throw new Error("Record was not deleted. Refresh and try again.");

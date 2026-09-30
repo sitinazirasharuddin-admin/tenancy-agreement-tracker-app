@@ -34,7 +34,7 @@ Commit as `sitinazirasharuddin-admin <335818130+sitinazirasharuddin-admin@users.
 
 ## Scope
 
-Sprints 1–3 implement the v1 demo workflow and management screens. Sprint 4 is the later lock-down stage: authenticated private ownership and RLS isolation must be completed and tested before storing real tenant information. The current shared-demo permissions are intentional, not user isolation.
+Sprints 1–3 implement the complete agreement workflow. The team-workspace release adds authenticated admin/member teams and database isolation at `/`; the public sample tracker remains at `/demo`. See `docs/TEAM_WORKSPACES.md` for migration, setup, verification and email-delivery requirements.
 
 ## Hosted database verification (2026-09-30)
 
