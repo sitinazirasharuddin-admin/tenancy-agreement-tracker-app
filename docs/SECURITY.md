@@ -1,31 +1,24 @@
-# Security
+# Internal access security
 
-## Secret Handling
-- Supabase URL + anon key: public, safe for frontend (RLS enforced).
-- Service role key: server-only, never in frontend env or client bundles.
-- All secrets via Vercel environment variables. No hardcoded keys in code.
+The production app is invitation-only following migration 0008. The old demo-first design is superseded.
 
-## Permission Model
-**v1 (demo):** RLS enabled but permissive — all rows readable/writable without login. Suitable for demo with seed data.
-**Lock-down sprint:** Replace permissive policies with owner-scoped:
-```sql
-create policy "<t>_owner_read" on <t>
-  for select using (auth.uid() = user_id);
-create policy "<t>_owner_write" on <t>
-  for all using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
-```
-Every row carries `user_id` (nullable now, NOT NULL after lock-down).
+- A database trigger on `auth.users` checks an unused, unexpired invitation matching the registration email. Direct signup API calls must pass the same check. Client metadata is only an invitation token to validate, never a trusted role or membership claim.
+- Registration queues a request; it never inserts a team membership. Email confirmation is required before approval.
+- Only an existing administrator of the invited, active team can approve or reject via `review_registration`. Approved applicants become members, not administrators. Decisions are audited.
+- Existing approved team members retain access. Open workspace creation is disabled. Existing accounts without membership may sign in only to request access; they cannot read business data.
+- All business tables and audit logs require active team membership through RLS. Anonymous privileges and NULL-team demo access are removed. Sample records are preserved but inaccessible to normal clients.
+- `/demo`, `/mockups` and `/previews/*` lead to sign-in. Closing the demo is enforced in the database as well as the UI.
+- Invitations are email-bound, expire in seven days, and can be revoked. If a pending invitation expires, create a new one and ask the existing applicant to sign in and request approval with the new code.
+- Membership removal immediately prevents subsequent database access, including with an existing session. It cannot retract data already viewed or exported.
 
-## Approved-Tools Rule
-- Agent uses named tools only (`compute_urgency`, `suggest_next_action`, `draft_followup`, `create_action`, `update_ta_status`)
-- Never raw SQL execution or arbitrary API calls from the agent
-- Tool permissions follow the risk matrix (low=auto, medium=approve, critical=human)
+## Administrator workflow
+1. Open Team settings and create an invitation for the colleague's email.
+2. Copy and share the invitation link through an approved company channel. Creating a link does not email it automatically.
+3. The colleague registers with that email, confirms the emailed verification link and waits for approval.
+4. Open Team settings → Invitations & registration approvals. Refresh registrations & members, then approve or reject the named applicant.
+5. The applicant signs in and clicks Check approval status, then opens the workspace.
 
-## Audit Principle
-- Every status change, creation, and deletion writes to `audit_logs` with before/after JSON
-- Agent actions logged with actor, action_type, target, timestamp
-- Logs are append-only — no updates or deletes
+## Validation
+`tests/internal-access.test.mjs` exercises denied anonymous access, preserved admin access, absent/wrong/expired invites, pending users, email confirmation, self-approval denial, cross-team admin denial, blocked direct membership insertion, approval, rejection and membership removal. It invokes the auth trigger with a simulated auth-service database role. Earlier migration tests remain historical regression coverage, not the final policy.
 
-## Honesty Note
-Per-user isolation (RLS) is NOT active in v1 demo. Do not store real tenant data until the lock-down sprint is complete and auth is verified working.
+No service-role secret is shipped to the browser. This change does not enable MFA, change GitHub visibility, establish database backups, or certify compliance with company IT policy.

@@ -1,4 +1,4 @@
-import Tracker from "@/components/tracker";
+import { redirect } from "next/navigation";
 export default function DemoPage() {
-  return <Tracker />;
+  redirect("/");
 }

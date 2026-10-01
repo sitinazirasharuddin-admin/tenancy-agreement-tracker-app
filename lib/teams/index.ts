@@ -13,6 +13,8 @@ export type Invite = {
   expires_at: string;
   accepted_at: string | null;
   revoked_at: string | null;
+  requested_by: string | null;
+  requested_at: string | null;
 };
 export const portfolioNames = [
   "Menara Millenium",
@@ -59,4 +61,14 @@ export async function teamRpc(name: string, args: Record<string, unknown>) {
   const { data, error } = await createClient().rpc(name, args);
   if (error) throw error;
   return data;
+}
+
+export async function myRegistrations(userId: string): Promise<Invite[]> {
+  const { data, error } = await createClient()
+    .from("team_invites")
+    .select("*")
+    .eq("requested_by", userId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
 }

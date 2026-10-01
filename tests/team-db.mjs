@@ -45,6 +45,46 @@ for (const file of [
       "utf8",
     ),
   );
+if (process.env.INTERNAL_ACCESS_TEST === "1") {
+  await db.exec(
+    "alter table auth.users add column email text, add column email_confirmed_at timestamptz, add column raw_user_meta_data jsonb default '{}'",
+  );
+  for (const user of users)
+    await db.query(
+      "update auth.users set email=$2,email_confirmed_at=now() where id=$1",
+      [user.id, user.email],
+    );
+  await db.query(
+    "select set_config('request.jwt.claim.sub',$1,false),set_config('request.jwt.claim.email',$2,false)",
+    [users[0].id, users[0].email],
+  );
+  const team = (await db.query("select create_team('Internal QA') as id"))
+    .rows[0].id;
+  await db.query(
+    "insert into properties(name,team_id) values('Private QA Property',$1)",
+    [team],
+  );
+  await db.exec(
+    await readFile(
+      new URL(
+        "../supabase/migrations/0008_invitation_approval.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
+  const token = (
+    await db.query("select invite_team_member($1,$2) as token", [
+      team,
+      users[1].email,
+    ])
+  ).rows[0].token;
+  await db.query(
+    "select set_config('request.jwt.claim.sub',$1,false),set_config('request.jwt.claim.email',$2,false)",
+    [users[1].id, users[1].email],
+  );
+  await db.query("select accept_team_invite($1)", [token]);
+}
 const tables = new Set([
   "properties",
   "units",
@@ -58,6 +98,7 @@ const tables = new Set([
 ]);
 const rpcs = new Set([
   "create_team",
+  "review_registration",
   "invite_team_member",
   "accept_team_invite",
   "revoke_team_invite",
