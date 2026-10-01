@@ -741,33 +741,31 @@ export default function Tracker({
           ☰ Menu
         </button>
         <nav id="workspace-nav" className={menuOpen ? "menu-open" : ""}>
-          {["Dashboard", "Agreements", "Properties", "Tenants", "Actions"].map(
-            (s, i) => (
-              <button
-                key={s}
-                aria-label={s}
-                className={section === s && !current ? "active" : ""}
-                onClick={() => {
-                  setSection(s);
-                  setMenuOpen(false);
-                  setSelected(null);
-                  setNotice("");
-                }}
-              >
-                <span>{["◫", "▤", "▦", "◎", "☑"][i]}</span>
-                {s}
-                {s === "Actions" && (
-                  <b>
-                    {
-                      store.tenancy_agreements.filter(
-                        (ta) => !ta.submission_completed,
-                      ).length
-                    }
-                  </b>
-                )}
-              </button>
-            ),
-          )}
+          {["Dashboard", "Agreements", "Properties", "Actions"].map((s, i) => (
+            <button
+              key={s}
+              aria-label={s}
+              className={section === s && !current ? "active" : ""}
+              onClick={() => {
+                setSection(s);
+                setMenuOpen(false);
+                setSelected(null);
+                setNotice("");
+              }}
+            >
+              <span>{["◫", "▤", "▦", "☑"][i]}</span>
+              {s}
+              {s === "Actions" && (
+                <b>
+                  {
+                    store.tenancy_agreements.filter(
+                      (ta) => !ta.submission_completed,
+                    ).length
+                  }
+                </b>
+              )}
+            </button>
+          ))}
         </nav>
         <div className="sidebar-foot">
           <span className="demo-dot" /> {teamName || "Demo workspace"}
@@ -1208,62 +1206,6 @@ export default function Tracker({
                   )}
                 />
               )}
-              {section === "Tenants" &&
-                (["tenants"] as Table[]).map((table) => (
-                  <section className="panel" key={table}>
-                    <div className="panel-heading">
-                      <h2>{label(table)}</h2>
-                      <button className="primary" onClick={() => edit(table)}>
-                        + Add {names[table].toLowerCase()}
-                      </button>
-                    </div>
-                    <div className="entity-grid">
-                      {!store[table].length && (
-                        <p className="empty">
-                          No {table} yet. Add your first record.
-                        </p>
-                      )}
-                      {store[table].map((r) => (
-                        <article className="entity" key={r.id}>
-                          {table === "properties" && (
-                            <PropertyPhoto
-                              name={r.name}
-                              className="entity-photo"
-                            />
-                          )}
-                          <div className="entity-icon">
-                            {table === "tenants" ? "◎" : "▦"}
-                          </div>
-                          <h3>{text(r.name || r.unit_number)}</h3>
-                          <p>
-                            {text(
-                              r.company_name ||
-                                r.address ||
-                                find("properties", r.property_id)?.name,
-                            )}
-                          </p>
-                          <small>
-                            {text(
-                              r.contact_email ||
-                                (r.floor ? `Floor ${r.floor}` : ""),
-                            )}
-                          </small>
-                          <small>{text(r.contact_phone)}</small>
-                          <div className="row-actions">
-                            <button onClick={() => edit(table, r)}>Edit</button>
-                            <button
-                              className="danger"
-                              disabled={busy}
-                              onClick={() => void remove(table, r)}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  </section>
-                ))}
             </>
           )}
         </div>
