@@ -46,6 +46,8 @@ export async function saveRow(
   delete row.created_at;
   delete row.user_id;
   if (table === "tenancy_agreements") {
+    // A stale edit form must not overwrite a separately saved submission tick.
+    delete row.submission_completed;
     validateAgreement(row, store);
     row.ta_reference = String(row.ta_reference).trim();
     row.stamping_due_date = stampingDue(row.signing_date);
@@ -60,6 +62,24 @@ export async function saveRow(
     throw new Error(`Failed to save — check connection. ${error.message}`);
   return data as Row;
 }
+export async function setSubmissionCompleted(
+  id: string,
+  completed: boolean,
+  teamId?: string,
+) {
+  let query = db()
+    .from("tenancy_agreements")
+    .update({ submission_completed: completed })
+    .eq("id", id);
+  query = teamId ? query.eq("team_id", teamId) : query.is("team_id", null);
+  const { data, error } = await query
+    .select("id, submission_completed")
+    .single();
+  if (error)
+    throw new Error(`Unable to save submission tick. ${error.message}`);
+  return data;
+}
+
 export async function saveManualAgreement(
   input: Partial<Row>,
   teamId?: string,

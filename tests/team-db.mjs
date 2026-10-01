@@ -33,6 +33,13 @@ await db.exec(
     "utf8",
   ),
 );
+for (const file of ["0004_archive_team.sql", "0005_submission_checklist.sql"])
+  await db.exec(
+    await readFile(
+      new URL("../supabase/migrations/" + file, import.meta.url),
+      "utf8",
+    ),
+  );
 const tables = new Set([
   "properties",
   "units",

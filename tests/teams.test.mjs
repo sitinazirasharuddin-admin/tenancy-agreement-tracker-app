@@ -30,6 +30,16 @@ test("private teams enforce RLS, references, roles and invitation identity in Po
         "utf8",
       ),
     );
+    for (const file of [
+      "0004_archive_team.sql",
+      "0005_submission_checklist.sql",
+    ])
+      await db.exec(
+        await readFile(
+          new URL("../supabase/migrations/" + file, import.meta.url),
+          "utf8",
+        ),
+      );
     const as = async (id, email) => {
       await db.exec("reset role");
       await db.query(
@@ -64,6 +74,29 @@ test("private teams enforce RLS, references, roles and invitation identity in Po
       [teamA, propertyA, unitA, tenantA],
     );
     assert.equal(taA.user_id, alice);
+    assert.equal(
+      (
+        await one(
+          "select submission_completed from tenancy_agreements where id=$1",
+          [taA.id],
+        )
+      ).submission_completed,
+      false,
+    );
+    await db.query(
+      "update tenancy_agreements set submission_completed=true where id=$1",
+      [taA.id],
+    );
+    const ticked = await one(
+      "select submission_completed,status,payment_status from tenancy_agreements where id=$1",
+      [taA.id],
+    );
+    assert.deepEqual(ticked, {
+      submission_completed: true,
+      status: "preparation",
+      payment_status: "pending",
+    });
+
     await db.query(
       "update tenancy_agreements set signing_date='2026-09-30',status='signed' where id=$1",
       [taA.id],
@@ -92,6 +125,18 @@ test("private teams enforce RLS, references, roles and invitation identity in Po
           [teamA],
         )
       ).n >= 4,
+    );
+    // Reopening the submission checklist must not reopen a completed agreement.
+    await db.query(
+      "update tenancy_agreements set submission_completed=false where id=$1",
+      [taA.id],
+    );
+    assert.deepEqual(
+      await one(
+        "select submission_completed,status from tenancy_agreements where id=$1",
+        [taA.id],
+      ),
+      { submission_completed: false, status: "completed" },
     );
     const invitation = (
       await one("select invite_team_member($1,'bob@example.com') as token", [
@@ -150,6 +195,15 @@ test("private teams enforce RLS, references, roles and invitation identity in Po
       ),
       /row-level security/,
     );
+    assert.equal(
+      (
+        await db.query(
+          "update tenancy_agreements set submission_completed=true where id=$1 returning id",
+          [taA.id],
+        )
+      ).rows.length,
+      0,
+    );
     await as(eve, "eve@example.com");
     await assert.rejects(
       db.query("select accept_team_invite($1)", [invitation]),
@@ -157,6 +211,20 @@ test("private teams enforce RLS, references, roles and invitation identity in Po
     );
     await as(bob, "bob@example.com");
     await db.query("select accept_team_invite($1)", [invitation]);
+    await db.query(
+      "update tenancy_agreements set submission_completed=true where id=$1",
+      [taA.id],
+    );
+    assert.equal(
+      (
+        await one(
+          "select submission_completed from tenancy_agreements where id=$1",
+          [taA.id],
+        )
+      ).submission_completed,
+      true,
+    );
+
     assert.equal(
       (
         await one("select count(*)::int as n from properties where id=$1", [

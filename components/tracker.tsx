@@ -1,7 +1,14 @@
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
-import { loadStore, saveRow, deleteRow, saveManualAgreement } from "@/lib/data";
+import SubmissionChecklist from "./submission-checklist";
+import {
+  loadStore,
+  saveRow,
+  deleteRow,
+  saveManualAgreement,
+  setSubmissionCompleted,
+} from "@/lib/data";
 import {
   emptyStore,
   statuses,
@@ -110,9 +117,6 @@ export default function Tracker({
   const [filterProperty, setFilterProperty] = useState("");
   const [pic, setPic] = useState("");
   const [sort, setSort] = useState("created_at");
-  const [actionFilter, setActionFilter] = useState("");
-  const [actionState, setActionState] = useState("open");
-  const [checked, setChecked] = useState<string[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmation, setConfirmation] = useState<{
     message: string;
@@ -417,18 +421,6 @@ export default function Tracker({
         ? text(b.created_at).localeCompare(text(a.created_at))
         : text(a[sort] || "9999").localeCompare(text(b[sort] || "9999")),
     );
-  const filteredActions = store.outstanding_actions
-    .filter(
-      (a) =>
-        (!actionFilter || a.ta_id === actionFilter) &&
-        (actionState === "all" ||
-          !!a.completed === (actionState === "completed")),
-    )
-    .sort(
-      (a, b) =>
-        urgency(b, find("tenancy_agreements", b.ta_id)) -
-        urgency(a, find("tenancy_agreements", a.ta_id)),
-    );
   function exportCSV() {
     const columns = [
       "ta_reference",
@@ -476,7 +468,7 @@ export default function Tracker({
     a.click();
     URL.revokeObjectURL(url);
   }
-  function actionList(rows: Row[], bulk = false) {
+  function actionList(rows: Row[]) {
     return (
       <div className="action-list">
         {!rows.length && <p className="empty">No outstanding actions</p>}
@@ -485,20 +477,6 @@ export default function Tracker({
           const score = urgency(a, ta);
           return (
             <div className="action" key={a.id}>
-              {bulk && !a.completed && (
-                <input
-                  type="checkbox"
-                  aria-label={`Select ${a.description}`}
-                  checked={checked.includes(a.id)}
-                  onChange={(e) =>
-                    setChecked(
-                      e.target.checked
-                        ? [...checked, a.id]
-                        : checked.filter((id) => id !== a.id),
-                    )
-                  }
-                />
-              )}
               <span
                 className={`dot ${a.completed ? "done" : score >= 50 ? "red" : score >= 25 ? "amber" : ""}`}
               />
@@ -762,8 +740,9 @@ export default function Tracker({
                 {s === "Actions" && (
                   <b>
                     {
-                      store.outstanding_actions.filter((a) => !a.completed)
-                        .length
+                      store.tenancy_agreements.filter(
+                        (ta) => !ta.submission_completed,
+                      ).length
                     }
                   </b>
                 )}
@@ -822,7 +801,9 @@ export default function Tracker({
               <p className="muted">
                 {current
                   ? `${tenantName(current)} · ${text(find("properties", current.property_id)?.name)}`
-                  : "Keep every signature, deadline and follow-up on track."}
+                  : section === "Actions"
+                    ? "Your dashboard agreements appear here automatically. Tick when the tenant has completed submission."
+                    : "Keep every signature, deadline and follow-up on track."}
               </p>
             </div>
             <div className="row-actions">
@@ -831,13 +812,15 @@ export default function Tracker({
                   Export CSV ↗
                 </button>
               )}
-              <button
-                className="primary"
-                disabled={loading || busy}
-                onClick={() => edit("tenancy_agreements")}
-              >
-                + New TA
-              </button>
+              {section !== "Actions" && (
+                <button
+                  className="primary"
+                  disabled={loading || busy}
+                  onClick={() => edit("tenancy_agreements")}
+                >
+                  + New TA
+                </button>
+              )}
             </div>
           </header>
           {error && (
@@ -1169,67 +1152,30 @@ export default function Tracker({
                 </section>
               )}
               {section === "Actions" && (
-                <section className="panel">
-                  <div className="panel-heading">
-                    <h2>Follow-ups</h2>
-                    <button
-                      className="primary"
-                      onClick={() => edit("outstanding_actions")}
-                    >
-                      + Add action
-                    </button>
-                  </div>
-                  <div className="filters">
-                    <select
-                      aria-label="Filter actions by agreement"
-                      value={actionFilter}
-                      onChange={(e) => {
-                        setActionFilter(e.target.value);
-                        setChecked([]);
-                      }}
-                    >
-                      <option value="">All agreements</option>
-                      {store.tenancy_agreements.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {text(t.ta_reference)}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      aria-label="Action state"
-                      value={actionState}
-                      onChange={(e) => {
-                        setActionState(e.target.value);
-                        setChecked([]);
-                      }}
-                    >
-                      <option value="open">Open actions</option>
-                      <option value="completed">Completed actions</option>
-                      <option value="all">All actions</option>
-                    </select>
-                    <button
-                      disabled={busy || !checked.length}
-                      onClick={() =>
-                        void mutate(async () => {
-                          for (const id of checked) {
-                            const row = find("outstanding_actions", id);
-                            if (row)
-                              await saveRow(
-                                "outstanding_actions",
-                                { ...row, completed: true },
-                                store,
-                                teamId,
-                              );
-                          }
-                          setChecked([]);
-                        }, "Selected actions completed.")
-                      }
-                    >
-                      Complete selected ({checked.length})
-                    </button>
-                  </div>
-                  {actionList(filteredActions, true)}
-                </section>
+                <>
+                  <SubmissionChecklist
+                    store={store}
+                    busy={busy}
+                    onOpen={setSelected}
+                    onToggle={(id, completed) =>
+                      void mutate(
+                        () => setSubmissionCompleted(id, completed, teamId),
+                        completed
+                          ? "Tenant submission marked complete."
+                          : "Tenant submission marked pending.",
+                      )
+                    }
+                  />
+                  {!!store.outstanding_actions.length && (
+                    <details className="panel previous-followups">
+                      <summary>
+                        Previously saved follow-ups (
+                        {store.outstanding_actions.length})
+                      </summary>
+                      {actionList(store.outstanding_actions)}
+                    </details>
+                  )}
+                </>
               )}
               {["Properties", "Tenants"].includes(section) &&
                 (section === "Properties"

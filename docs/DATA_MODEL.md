@@ -41,3 +41,6 @@ All tables: RLS enabled. v1 policies = permissive (select/write for all). Lock-d
 
 ## AI Fields (later)
 Future AI-suggested actions will add `ai_value text`, `source text`, `confidence numeric`, `review_status text default 'unreviewed'` on outstanding_actions or a dedicated suggestions table.
+## Tenant submission checklist
+
+Migration `0005_submission_checklist.sql` adds `tenancy_agreements.submission_completed boolean not null default false`. Actions reads the same scoped agreements as the dashboard, with no extra action creation. The checkbox is independent of workflow status, may be unticked, and uses existing team RLS and audit logging. Existing records start pending; generic agreement edits omit this field so stale forms cannot overwrite a newer tick.
