@@ -108,6 +108,18 @@ export function urgency(action: Row, ta?: Row, date = today()) {
   );
 }
 export function validateAgreement(row: Partial<Row>, store: Store) {
+  for (const [key, title] of [
+    ["monthly_rental", "Monthly rental"],
+    ["total_square_feet", "Total area"],
+  ]) {
+    const value = row[key];
+    if (
+      value != null &&
+      value !== "" &&
+      (!Number.isFinite(Number(value)) || Number(value) < 0)
+    )
+      throw new Error(`${title} must be a non-negative number.`);
+  }
   if (!String(row.ta_reference ?? "").trim())
     throw new Error("Agreement reference is required.");
   if (

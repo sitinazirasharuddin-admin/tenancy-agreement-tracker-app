@@ -115,6 +115,13 @@ export default function SubmissionChecklist({
                   ["Stamping submission date", ta.stamping_submission_date],
                   ["Stamping due date", ta.stamping_due_date],
                   ["Stamping fee (RM)", ta.stamping_fee],
+                  [
+                    "Monthly rental (RM)",
+                    ta.monthly_rental == null
+                      ? null
+                      : Number(ta.monthly_rental).toFixed(2),
+                  ],
+                  ["Total area (sq ft)", ta.total_square_feet],
                   ["Payment status", label(ta.payment_status)],
                   ["Notes", ta.notes],
                 ].map(([title, value]) => (

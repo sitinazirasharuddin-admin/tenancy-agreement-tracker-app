@@ -34,6 +34,7 @@ test("private teams enforce RLS, references, roles and invitation identity in Po
       "0004_archive_team.sql",
       "0005_submission_checklist.sql",
       "0006_configurable_stamping_due.sql",
+      "0007_rental_and_area.sql",
     ])
       await db.exec(
         await readFile(

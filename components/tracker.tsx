@@ -275,6 +275,12 @@ export default function Tracker({
                 .map((u) => ({ value: u.id, title: text(u.unit_number) }))
             : undefined,
         },
+        { key: "monthly_rental", title: "Monthly rental (RM)", type: "number" },
+        {
+          key: "total_square_feet",
+          title: "Total area (sq ft)",
+          type: "number",
+        },
         { key: "person_in_charge", title: "Person in charge", required: true },
         {
           key: "status",
@@ -444,6 +450,8 @@ export default function Tracker({
       "expiry_date",
       "stamping_submission_date",
       "stamping_fee",
+      "monthly_rental",
+      "total_square_feet",
       "payment_status",
       "notes",
     ];
@@ -914,10 +922,18 @@ export default function Tracker({
                     "expiry_date",
                     "stamping_submission_date",
                     "stamping_fee",
+                    "monthly_rental",
+                    "total_square_feet",
                     "payment_status",
                   ].map((k) => (
                     <div key={k}>
-                      <small>{label(k)}</small>
+                      <small>
+                        {k === "total_square_feet"
+                          ? "Total area (sq ft)"
+                          : k === "monthly_rental"
+                            ? "Monthly rental (RM)"
+                            : label(k)}
+                      </small>
                       <strong
                         className={
                           k === "stamping_due_date" && overdue(current)
@@ -927,7 +943,7 @@ export default function Tracker({
                       >
                         {current[k] == null
                           ? "Not set"
-                          : k === "stamping_fee"
+                          : k === "stamping_fee" || k === "monthly_rental"
                             ? `RM ${Number(current[k]).toFixed(2)}`
                             : label(current[k])}
                       </strong>

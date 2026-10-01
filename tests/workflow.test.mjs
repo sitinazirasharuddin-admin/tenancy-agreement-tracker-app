@@ -134,6 +134,7 @@ test("real Postgres migrations support the complete PRD scenario and preserve in
       "0001_init.sql",
       "0002_workflow_integrity.sql",
       "0006_configurable_stamping_due.sql",
+      "0007_rental_and_area.sql",
     ])
       await db.exec(
         await readFile(
@@ -149,6 +150,31 @@ test("real Postgres migrations support the complete PRD scenario and preserve in
       `insert into tenancy_agreements(ta_reference,property_id,unit_id,tenant_id,person_in_charge) values ('TA-2024-018','a0000000-0000-4000-8000-000000000001','b0000000-0000-4000-8000-000000000001','c0000000-0000-4000-8000-000000000001','Nadia Hassan') returning id`,
     );
     const id = result.rows[0].id;
+    await db.query(
+      "update tenancy_agreements set monthly_rental=4500.50,total_square_feet=1250.25 where id=$1",
+      [id],
+    );
+    const rental = (
+      await db.query(
+        "select monthly_rental::text as rent,total_square_feet::text as area from tenancy_agreements where id=$1",
+        [id],
+      )
+    ).rows[0];
+    assert.deepEqual(rental, { rent: "4500.50", area: "1250.25" });
+    await assert.rejects(
+      db.query("update tenancy_agreements set monthly_rental=-1 where id=$1", [
+        id,
+      ]),
+      /check constraint/,
+    );
+    await assert.rejects(
+      db.query(
+        "update tenancy_agreements set total_square_feet=-1 where id=$1",
+        [id],
+      ),
+      /check constraint/,
+    );
+
     await db.query(
       `update tenancy_agreements set status='pending_signing' where id=$1`,
       [id],
