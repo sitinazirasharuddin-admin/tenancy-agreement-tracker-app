@@ -50,3 +50,6 @@ Migration `0005_submission_checklist.sql` adds `tenancy_agreements.submission_co
 Migration 0006 changes stamping due dates to submission date plus `stamping_due_days` (integer, default 14, range 0–3650 calendar days). Each agreement stores its own interval, editable in New/Edit Agreement. The database trigger recalculates on save, and existing due dates are recalculated at migration time. A missing submission date produces no due date. Signing date no longer drives this deadline.
 ## Rental and floor area
 Migration 0007 adds optional `monthly_rental` (RM per month) and `total_square_feet` (sq ft) to agreements, both non-negative numeric(12,2). New/Edit Agreement saves these values; details, Actions details and CSV exports include them. Existing records remain blank until entered.
+
+## Rental by lease year
+Migration 0009 keeps `monthly_rental` as Year 1 and adds optional non-negative numeric(12,2) `monthly_rental_year_2` and `monthly_rental_year_3`. These are monthly RM rates for each lease year, not annual totals. All three appear in New/Edit Agreement, agreement details, Actions details and CSV. Existing rates are preserved; later years stay blank until entered.

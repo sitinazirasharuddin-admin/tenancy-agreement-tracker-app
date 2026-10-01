@@ -275,7 +275,21 @@ export default function Tracker({
                 .map((u) => ({ value: u.id, title: text(u.unit_number) }))
             : undefined,
         },
-        { key: "monthly_rental", title: "Monthly rental (RM)", type: "number" },
+        {
+          key: "monthly_rental",
+          title: "Monthly rental — Year 1 (RM)",
+          type: "number",
+        },
+        {
+          key: "monthly_rental_year_2",
+          title: "Monthly rental — Year 2 (RM)",
+          type: "number",
+        },
+        {
+          key: "monthly_rental_year_3",
+          title: "Monthly rental — Year 3 (RM)",
+          type: "number",
+        },
         {
           key: "total_square_feet",
           title: "Total area (sq ft)",
@@ -451,6 +465,8 @@ export default function Tracker({
       "stamping_submission_date",
       "stamping_fee",
       "monthly_rental",
+      "monthly_rental_year_2",
+      "monthly_rental_year_3",
       "total_square_feet",
       "payment_status",
       "notes",
@@ -923,6 +939,8 @@ export default function Tracker({
                     "stamping_submission_date",
                     "stamping_fee",
                     "monthly_rental",
+                    "monthly_rental_year_2",
+                    "monthly_rental_year_3",
                     "total_square_feet",
                     "payment_status",
                   ].map((k) => (
@@ -930,8 +948,8 @@ export default function Tracker({
                       <small>
                         {k === "total_square_feet"
                           ? "Total area (sq ft)"
-                          : k === "monthly_rental"
-                            ? "Monthly rental (RM)"
+                          : k.startsWith("monthly_rental")
+                            ? `Monthly rental — Year ${k === "monthly_rental" ? 1 : k.endsWith("2") ? 2 : 3} (RM)`
                             : label(k)}
                       </small>
                       <strong
@@ -943,7 +961,8 @@ export default function Tracker({
                       >
                         {current[k] == null
                           ? "Not set"
-                          : k === "stamping_fee" || k === "monthly_rental"
+                          : k === "stamping_fee" ||
+                              k.startsWith("monthly_rental")
                             ? `RM ${Number(current[k]).toFixed(2)}`
                             : label(current[k])}
                       </strong>

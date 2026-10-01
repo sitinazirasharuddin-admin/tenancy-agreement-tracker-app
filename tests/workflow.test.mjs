@@ -135,6 +135,7 @@ test("real Postgres migrations support the complete PRD scenario and preserve in
       "0002_workflow_integrity.sql",
       "0006_configurable_stamping_due.sql",
       "0007_rental_and_area.sql",
+      "0009_rental_by_year.sql",
     ])
       await db.exec(
         await readFile(
@@ -161,6 +162,31 @@ test("real Postgres migrations support the complete PRD scenario and preserve in
       )
     ).rows[0];
     assert.deepEqual(rental, { rent: "4500.50", area: "1250.25" });
+    await db.query(
+      "update tenancy_agreements set monthly_rental_year_2=5000.25, monthly_rental_year_3=0 where id=$1",
+      [id],
+    );
+    assert.deepEqual(
+      (
+        await db.query(
+          "select monthly_rental::text as y1, monthly_rental_year_2::text as y2, monthly_rental_year_3::text as y3 from tenancy_agreements where id=$1",
+          [id],
+        )
+      ).rows[0],
+      { y1: "4500.50", y2: "5000.25", y3: "0.00" },
+    );
+    await assert.rejects(
+      db.query(
+        "update tenancy_agreements set monthly_rental_year_2=-1 where id=$1",
+        [id],
+      ),
+    );
+    await assert.rejects(
+      db.query(
+        "update tenancy_agreements set monthly_rental_year_3=-1 where id=$1",
+        [id],
+      ),
+    );
     await assert.rejects(
       db.query("update tenancy_agreements set monthly_rental=-1 where id=$1", [
         id,

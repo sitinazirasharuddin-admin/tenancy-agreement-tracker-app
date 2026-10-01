@@ -109,7 +109,9 @@ export function urgency(action: Row, ta?: Row, date = today()) {
 }
 export function validateAgreement(row: Partial<Row>, store: Store) {
   for (const [key, title] of [
-    ["monthly_rental", "Monthly rental"],
+    ["monthly_rental", "Monthly rental — Year 1"],
+    ["monthly_rental_year_2", "Monthly rental — Year 2"],
+    ["monthly_rental_year_3", "Monthly rental — Year 3"],
     ["total_square_feet", "Total area"],
   ]) {
     const value = row[key];
