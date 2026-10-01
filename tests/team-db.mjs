@@ -33,7 +33,7 @@ await db.exec(
     "utf8",
   ),
 );
-for (const file of ["0004_archive_team.sql", "0005_submission_checklist.sql"])
+for (const file of ["0004_archive_team.sql", "0005_submission_checklist.sql", "0006_configurable_stamping_due.sql"])
   await db.exec(
     await readFile(
       new URL("../supabase/migrations/" + file, import.meta.url),

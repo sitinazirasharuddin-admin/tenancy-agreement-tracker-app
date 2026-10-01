@@ -37,3 +37,7 @@
 - Check the card and expanded details at 390px viewport width without horizontal overflow.
 
 Validation: six automated workflow/team tests passed, including checklist independence and RLS. Local browser checks confirmed existing records, dashboard-only creation, saved tick after reload, unticking and mobile details. Production migration 0005 applied and schema verified; no production business records changed for testing.
+
+## Configurable stamping due dates
+
+Verify 22 September 2026 submission produces 6 October at 14 days and 13 October at 21 days. Verify blank submission produces no deadline regardless of signing date; integer interval validation, leap-year/year boundaries, database persistence and recalculation are covered in workflow tests.

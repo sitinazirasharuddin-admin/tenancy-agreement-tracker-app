@@ -50,7 +50,10 @@ export async function saveRow(
     delete row.submission_completed;
     validateAgreement(row, store);
     row.ta_reference = String(row.ta_reference).trim();
-    row.stamping_due_date = stampingDue(row.signing_date);
+    row.stamping_due_date = stampingDue(
+      row.stamping_submission_date,
+      row.stamping_due_days ?? 14,
+    );
   }
   if (table === "outstanding_actions")
     row.completed_at = row.completed ? new Date().toISOString() : null;

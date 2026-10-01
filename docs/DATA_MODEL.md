@@ -14,7 +14,7 @@
 | commencement_date | date | lease start |
 | expiry_date | date | lease end |
 | stamping_submission_date | date | submitted to LHDN |
-| stamping_due_date | date | auto = signing_date + 30 days |
+| stamping_due_date | date | auto = stamping_submission_date + stamping_due_days |
 | stamping_fee | numeric(12,2) | RM amount |
 | payment_status | text | pending, partial, paid, na |
 | person_in_charge | text | leasing staff name |
@@ -44,3 +44,7 @@ Future AI-suggested actions will add `ai_value text`, `source text`, `confidence
 ## Tenant submission checklist
 
 Migration `0005_submission_checklist.sql` adds `tenancy_agreements.submission_completed boolean not null default false`. Actions reads the same scoped agreements as the dashboard, with no extra action creation. The checkbox is independent of workflow status, may be unticked, and uses existing team RLS and audit logging. Existing records start pending; generic agreement edits omit this field so stale forms cannot overwrite a newer tick.
+
+## Configurable stamping deadline
+
+Migration 0006 changes stamping due dates to submission date plus `stamping_due_days` (integer, default 14, range 0–3650 calendar days). Each agreement stores its own interval, editable in New/Edit Agreement. The database trigger recalculates on save, and existing due dates are recalculated at migration time. A missing submission date produces no due date. Signing date no longer drives this deadline.

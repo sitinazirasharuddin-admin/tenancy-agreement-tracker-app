@@ -111,7 +111,8 @@ export default function Tracker({
   const [formError, setFormError] = useState("");
   const [workflowTarget, setWorkflowTarget] = useState<string | null>(null);
   const [property, setProperty] = useState("");
-  const [signing, setSigning] = useState("");
+  const [submission, setSubmission] = useState("");
+  const [dueDays, setDueDays] = useState("14");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
   const [filterProperty, setFilterProperty] = useState("");
@@ -184,7 +185,8 @@ export default function Tracker({
     setWorkflowTarget(null);
     setFormError("");
     setProperty(text(row.property_id));
-    setSigning(text(row.signing_date));
+    setSubmission(text(row.stamping_submission_date));
+    setDueDays(text(row.stamping_due_days ?? 14));
     setEditor({ table, row });
   }
   async function mutate(work: () => Promise<unknown>, message: string) {
@@ -277,6 +279,12 @@ export default function Tracker({
           key: "status",
           title: "Status",
           options: options(statuses),
+          required: true,
+        },
+        {
+          key: "stamping_due_days",
+          title: "Stamping calculation days",
+          type: "number",
           required: true,
         },
         { key: "signing_date", title: "Signing date", type: "date" },
@@ -614,7 +622,7 @@ export default function Tracker({
               <div className="card-bottom">
                 <span className={overdue(ta) ? "overdue" : ""}>
                   {overdue(ta) ? "Overdue · " : ""}
-                  {text(ta.stamping_due_date || "Signing date not set")}
+                  {text(ta.stamping_due_date || "Submission date not set")}
                 </span>
                 <span>{openActions(ta.id).length} open actions →</span>
               </div>
@@ -672,8 +680,8 @@ export default function Tracker({
                     <small>
                       {overdue(ta)
                         ? "● Overdue stamping"
-                        : !ta.signing_date
-                          ? "Awaiting signing date"
+                        : !ta.stamping_submission_date
+                          ? "Awaiting submission date"
                           : ""}
                     </small>
                   </td>
@@ -917,9 +925,9 @@ export default function Tracker({
                     </div>
                   ))}
                 </div>
-                {!current.signing_date && (
+                {!current.stamping_submission_date && (
                   <p className="partial">
-                    Set signing date to calculate stamping due date.
+                    Set stamping submission date to calculate stamping due date.
                   </p>
                 )}
                 {current.status === "stamping_submitted" &&
@@ -1385,13 +1393,26 @@ export default function Tracker({
                             ).includes(f.key)
                           )
                         }
-                        defaultValue={text(editor.row[f.key])}
-                        step={f.type === "number" ? "0.01" : undefined}
+                        defaultValue={text(
+                          f.key === "stamping_due_days"
+                            ? (editor.row[f.key] ?? 14)
+                            : editor.row[f.key],
+                        )}
+                        max={f.key === "stamping_due_days" ? 3650 : undefined}
+                        step={
+                          f.key === "stamping_due_days"
+                            ? "1"
+                            : f.type === "number"
+                              ? "0.01"
+                              : undefined
+                        }
                         min={f.type === "number" ? "0" : undefined}
                         onChange={
-                          f.key === "signing_date"
-                            ? (e) => setSigning(e.target.value)
-                            : undefined
+                          f.key === "stamping_submission_date"
+                            ? (e) => setSubmission(e.target.value)
+                            : f.key === "stamping_due_days"
+                              ? (e) => setDueDays(e.target.value)
+                              : undefined
                         }
                       />
                     )}
@@ -1401,10 +1422,18 @@ export default function Tracker({
                   <p className="calculated wide">
                     Stamping due date:{" "}
                     <strong>
-                      {stampingDue(signing) || "Set signing date"}
+                      {dueDays !== "" &&
+                      Number.isInteger(Number(dueDays)) &&
+                      Number(dueDays) >= 0 &&
+                      Number(dueDays) <= 3650
+                        ? stampingDue(submission, dueDays) ||
+                          "Set stamping submission date"
+                        : "Enter valid calculation days"}
                     </strong>{" "}
                     <small>
-                      Automatically calculated: signing date + 30 days.
+                      Automatically calculated: stamping submission date +{" "}
+                      {dueDays || "…"} calendar days. Change Stamping
+                      calculation days for this agreement.
                     </small>
                   </p>
                 )}

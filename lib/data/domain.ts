@@ -68,12 +68,23 @@ export function today() {
     day: "2-digit",
   }).format(new Date());
 }
-export function stampingDue(signing: unknown) {
-  if (!signing) return null;
-  const date = new Date(`${signing}T00:00:00Z`);
+export function stampingDue(submission: unknown, days: unknown = 14) {
+  const count = Number(days);
+  if (
+    days === null ||
+    days === "" ||
+    !Number.isInteger(count) ||
+    count < 0 ||
+    count > 3650
+  )
+    throw new Error(
+      "Enter a whole number of stamping days between 0 and 3650.",
+    );
+  if (!submission) return null;
+  const date = new Date(`${submission}T00:00:00Z`);
   if (Number.isNaN(date.getTime()))
-    throw new Error("Enter a valid signing date.");
-  date.setUTCDate(date.getUTCDate() + 30);
+    throw new Error("Enter a valid stamping submission date.");
+  date.setUTCDate(date.getUTCDate() + count);
   return date.toISOString().slice(0, 10);
 }
 export function overdue(ta: Row, date = today()) {

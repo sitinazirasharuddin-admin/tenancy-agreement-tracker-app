@@ -84,10 +84,13 @@ test("guided workflow collects missing details and accepts zero fees and N/A pay
   );
 });
 
-test("30 calendar days, including leap year and year boundary", () => {
-  assert.equal(stampingDue("2024-02-01"), "2024-03-02");
-  assert.equal(stampingDue("2026-12-15"), "2027-01-14");
+test("configurable submission days, including leap year and year boundary", () => {
+  assert.equal(stampingDue("2024-02-20"), "2024-03-05");
+  assert.equal(stampingDue("2026-12-25"), "2027-01-08");
   assert.equal(stampingDue(null), null);
+  assert.equal(stampingDue("2026-09-22"), "2026-10-06");
+  assert.equal(stampingDue("2026-09-22", 21), "2026-10-13");
+  assert.throws(() => stampingDue("2026-09-22", 1.5), /whole number/);
 });
 test("stamping flags and urgency distinguish completed stamping and due boundaries", () => {
   const ta = { id: "ta", status: "signed", stamping_due_date: "2026-09-29" };
@@ -127,7 +130,11 @@ test("real Postgres migrations support the complete PRD scenario and preserve in
     await db.exec(
       `create role anon; create role authenticated; create schema auth; create function auth.uid() returns uuid language sql as 'select null::uuid';`,
     );
-    for (const name of ["0001_init.sql", "0002_workflow_integrity.sql"])
+    for (const name of [
+      "0001_init.sql",
+      "0002_workflow_integrity.sql",
+      "0006_configurable_stamping_due.sql",
+    ])
       await db.exec(
         await readFile(
           new URL("../supabase/migrations/" + name, import.meta.url),
@@ -154,7 +161,20 @@ test("real Postgres migrations support the complete PRD scenario and preserve in
       "select stamping_due_date::text as due from tenancy_agreements where id=$1",
       [id],
     );
-    assert.equal(signed.rows[0].due, "2026-10-30");
+    assert.equal(signed.rows[0].due, null);
+    await db.query(
+      "update tenancy_agreements set stamping_submission_date='2026-09-22', stamping_due_days=21 where id=$1",
+      [id],
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select stamping_due_date::text as due from tenancy_agreements where id=$1",
+          [id],
+        )
+      ).rows[0].due,
+      "2026-10-13",
+    );
     await db.query(
       `insert into outstanding_actions(ta_id,action_type,description,due_date) values ($1,'stamping','Submit to LHDN','2026-10-30')`,
       [id],
