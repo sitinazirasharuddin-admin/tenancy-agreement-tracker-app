@@ -692,3 +692,8 @@ tr:hover td {
     grid-template-columns: 1fr;
   }
 }
+
+.stamping-due-date {
+  font-weight: 800;
+  white-space: nowrap;
+}

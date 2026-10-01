@@ -619,10 +619,16 @@ export default function Tracker({
                 {text(find("properties", ta.property_id)?.name)} · Unit{" "}
                 {text(find("units", ta.unit_id)?.unit_number)}
               </p>
+              <p>
+                Stamping submitted:{" "}
+                {text(ta.stamping_submission_date || "Not set")}
+              </p>
               <div className="card-bottom">
                 <span className={overdue(ta) ? "overdue" : ""}>
-                  {overdue(ta) ? "Overdue · " : ""}
-                  {text(ta.stamping_due_date || "Submission date not set")}
+                  {overdue(ta) ? "Overdue · " : "Stamping due: "}
+                  <strong className="stamping-due-date">
+                    {text(ta.stamping_due_date || "Not set")}
+                  </strong>
                 </span>
                 <span>{openActions(ta.id).length} open actions →</span>
               </div>
@@ -647,7 +653,8 @@ export default function Tracker({
                 <th>Agreement / tenant</th>
                 <th>Property / unit</th>
                 <th>Status</th>
-                <th>Stamping due</th>
+                <th>Stamping submission date</th>
+                <th>Stamping due date</th>
                 <th>In charge</th>
                 <th>Open actions</th>
               </tr>
@@ -675,8 +682,11 @@ export default function Tracker({
                       {label(ta.status)}
                     </span>
                   </td>
+                  <td>{text(ta.stamping_submission_date || "Not set")}</td>
                   <td className={overdue(ta) ? "overdue" : ""}>
-                    {text(ta.stamping_due_date || "Not set")}
+                    <strong className="stamping-due-date">
+                      {text(ta.stamping_due_date || "Not set")}
+                    </strong>
                     <small>
                       {overdue(ta)
                         ? "● Overdue stamping"
