@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import SubmissionChecklist from "./submission-checklist";
+import PropertyFolders from "./property-folders";
 import {
   loadStore,
   saveRow,
@@ -1195,11 +1196,20 @@ export default function Tracker({
                   )}
                 </>
               )}
-              {["Properties", "Tenants"].includes(section) &&
-                (section === "Properties"
-                  ? (["properties", "units"] as Table[])
-                  : (["tenants"] as Table[])
-                ).map((table) => (
+              {section === "Properties" && (
+                <PropertyFolders
+                  store={store}
+                  busy={busy}
+                  onEdit={edit}
+                  onRemove={(table, row) => void remove(table, row)}
+                  onOpenAgreement={setSelected}
+                  photo={(name) => (
+                    <PropertyPhoto name={name} className="entity-photo" />
+                  )}
+                />
+              )}
+              {section === "Tenants" &&
+                (["tenants"] as Table[]).map((table) => (
                   <section className="panel" key={table}>
                     <div className="panel-heading">
                       <h2>{label(table)}</h2>
