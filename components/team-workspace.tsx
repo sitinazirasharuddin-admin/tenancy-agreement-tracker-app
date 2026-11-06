@@ -4,7 +4,6 @@ import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import {
   listTeams,
-  myRegistrations,
   teamPeople,
   teamRpc,
   type Team,
@@ -27,10 +26,8 @@ export default function TeamWorkspace() {
     [members, setMembers] = useState<Member[]>([]),
     [invites, setInvites] = useState<Invite[]>([]),
     [inviteCode, setInviteCode] = useState("");
-  const [requests, setRequests] = useState<Invite[]>([]);
   async function refreshTeams(id: string) {
     const result = await listTeams(id);
-    setRequests(await myRegistrations(id));
     setTeams(result);
     let remembered: string | null = null;
     try {
@@ -90,7 +87,6 @@ export default function TeamWorkspace() {
       if (event === "PASSWORD_RECOVERY") setMode("password");
       if (!session) {
         setTeams([]);
-        setRequests([]);
         setSelected(null);
         setSettings(false);
       } else if (event === "SIGNED_IN") {
@@ -126,15 +122,6 @@ export default function TeamWorkspace() {
       password = String(form.get("password") ?? "");
     await run(async () => {
       const db = createClient();
-      if (
-        mode === "signup" &&
-        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-          inviteCode.trim(),
-        )
-      )
-        throw new Error(
-          "Enter the invitation code shared by your administrator.",
-        );
       const result =
         mode === "signup"
           ? await db.auth.signUp({
@@ -142,7 +129,6 @@ export default function TeamWorkspace() {
               password,
               options: {
                 emailRedirectTo: window.location.origin + "/auth/callback",
-                data: { invitation_token: inviteCode.trim() },
               },
             })
           : mode === "reset"
@@ -153,17 +139,11 @@ export default function TeamWorkspace() {
             : mode === "password"
               ? await db.auth.updateUser({ password })
               : await db.auth.signInWithPassword({ email, password });
-      if (result.error)
-        throw new Error(
-          mode === "signup"
-            ? "Registration could not be completed. Use the invited email and a valid, unused invitation code. Contact your admin if the invitation expired."
-            : result.error.message,
-        );
+      if (result.error) throw new Error(result.error.message);
       if (mode === "signup") {
         setNotice(
-          "Check your email to confirm your account. Your administrator must approve your registration before you can access the workspace.",
+          "Check your email to confirm your account, then sign in. No administrator approval is required.",
         );
-        sessionStorage.removeItem("tenancy-invite");
       }
       if (mode === "reset")
         setNotice(
@@ -218,9 +198,7 @@ export default function TeamWorkspace() {
       setInviteCode("");
       sessionStorage.removeItem("tenancy-invite");
       window.history.replaceState({}, "", window.location.pathname);
-      setNotice(
-        "Request submitted. Your administrator must approve access before you can enter the workspace.",
-      );
+      setNotice("You have joined the workspace.");
     });
   }
   const feedback = (
@@ -261,11 +239,11 @@ export default function TeamWorkspace() {
             move work forward.
           </p>
           <div className="auth-preview">
-            <span>INVITATION-ONLY ACCESS</span>
+            <span>GET STARTED</span>
             {[
-              "Receive an administrator invitation",
-              "Register and confirm your email",
-              "Wait for administrator approval",
+              "Create your account",
+              "Confirm your email",
+              "Create a workspace or join your team",
             ].map((step, i) => (
               <div key={step}>
                 <b>0{i + 1}</b>
@@ -289,24 +267,13 @@ export default function TeamWorkspace() {
             </h2>
             <p className="muted">
               {mode === "signup"
-                ? "Invitation only. Confirm your email, then wait for administrator approval."
+                ? "Anyone can register. Confirm your email to get started."
                 : mode === "reset"
                   ? "We’ll email a secure reset link."
                   : "Sign in to your team’s private workspace."}
             </p>
             {feedback}
             <form onSubmit={authSubmit}>
-              {mode === "signup" && (
-                <label>
-                  Invitation code
-                  <input
-                    required
-                    value={inviteCode}
-                    onChange={(e) => setInviteCode(e.target.value)}
-                    placeholder="Code provided by your administrator"
-                  />
-                </label>
-              )}
               {mode !== "password" && (
                 <label>
                   Email address
@@ -357,7 +324,7 @@ export default function TeamWorkspace() {
                       setNotice("");
                     }}
                   >
-                    Register with invitation
+                    Create an account
                   </button>
                   <button className="link" onClick={() => setMode("reset")}>
                     Forgot password?
@@ -370,8 +337,7 @@ export default function TeamWorkspace() {
               )}
             </div>
             <p className="muted">
-              Internal use only. Access requires an invitation and admin
-              approval.
+              Open registration. Each team’s records remain private.
             </p>
           </div>
         </section>
@@ -422,7 +388,7 @@ export default function TeamWorkspace() {
               <div className="panel-heading">
                 <h2>Team members</h2>
                 <button disabled={busy} onClick={() => void run(refreshPeople)}>
-                  Refresh registrations & members
+                  Refresh members
                 </button>
               </div>
               {members.map((member) => (
@@ -488,11 +454,11 @@ export default function TeamWorkspace() {
             </section>
             {selected.role === "admin" && (
               <section className="panel invite-panel">
-                <h2>Invitations & registration approvals</h2>
+                <h2>Team invitations</h2>
                 <p className="muted">
                   Create a link for their email address, then share it with
-                  them. After registration and email confirmation, approve their
-                  request below. Links expire after seven days.
+                  them. They can join after confirming their email, without
+                  another approval. Links expire after seven days.
                 </p>
                 <form
                   onSubmit={(e) => {
@@ -527,53 +493,6 @@ export default function TeamWorkspace() {
                 {invites.map((invite) => (
                   <div className="invitation" key={invite.id}>
                     <strong>{invite.email}</strong>
-                    {invite.requested_by && (
-                      <>
-                        <p>
-                          Registration pending approval · Applicant must confirm
-                          their email first.
-                        </p>
-                        <div className="row-actions">
-                          <button
-                            className="primary"
-                            disabled={
-                              busy || new Date(invite.expires_at) < new Date()
-                            }
-                            onClick={() =>
-                              void run(async () => {
-                                await teamRpc("review_registration", {
-                                  invite_id: invite.id,
-                                  approve: true,
-                                });
-                                await refreshPeople();
-                                setNotice(
-                                  "Registration approved. The member can now access this workspace.",
-                                );
-                              })
-                            }
-                          >
-                            Approve registration
-                          </button>
-                          <button
-                            disabled={busy}
-                            onClick={() =>
-                              void run(async () => {
-                                await teamRpc("review_registration", {
-                                  invite_id: invite.id,
-                                  approve: false,
-                                });
-                                await refreshPeople();
-                                setNotice(
-                                  "Registration rejected. No workspace access granted.",
-                                );
-                              })
-                            }
-                          >
-                            Reject registration
-                          </button>
-                        </div>
-                      </>
-                    )}
                     <small>
                       {new Date(invite.expires_at) < new Date()
                         ? "Expired"
@@ -648,45 +567,44 @@ export default function TeamWorkspace() {
             </div>
             {!teams.length && (
               <div className="onboard-note">
-                Access is restricted. Registration does not grant access until
-                an administrator approves it.
+                Create your own private workspace, or use a team invitation to
+                join an existing workspace.
               </div>
             )}
             <div className="onboard-grid">
               <section className="panel onboarding">
-                <h2>Registration status</h2>
-                {requests.length ? (
-                  requests.map((request) => (
-                    <p key={request.id}>
-                      {request.email}:{" "}
-                      {request.revoked_at
-                        ? "Rejected or revoked — contact your administrator"
-                        : request.accepted_at
-                          ? "Approved"
-                          : new Date(request.expires_at) < new Date()
-                            ? "Expired — request a new invitation"
-                            : "Pending admin approval"}
-                    </p>
-                  ))
-                ) : (
-                  <p>
-                    No registration request yet. Use your invitation code to
-                    request access.
-                  </p>
-                )}
-                <button
-                  disabled={busy}
-                  onClick={() =>
+                <h2>Create a private workspace</h2>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const name = String(
+                      new FormData(e.currentTarget).get("team_name") ?? "",
+                    ).trim();
                     void run(async () => {
-                      await refreshTeams(user.id);
-                    })
-                  }
+                      const id = await teamRpc("create_team", {
+                        team_name: name,
+                      });
+                      const result = await refreshTeams(user.id);
+                      chooseTeam(result.find((t) => t.id === id) ?? null);
+                    });
+                  }}
                 >
-                  Check approval status
-                </button>
+                  <label>
+                    Workspace name
+                    <input
+                      name="team_name"
+                      required
+                      maxLength={120}
+                      placeholder="Your team name"
+                    />
+                  </label>
+                  <button className="primary" disabled={busy}>
+                    Create workspace
+                  </button>
+                </form>
               </section>
               <section className="panel onboarding">
-                <h2>Request access with an invitation</h2>
+                <h2>Join an existing team</h2>
                 <p className="muted">
                   Use the invitation code shared by your admin. Sign in with the
                   email they invited.
@@ -701,7 +619,7 @@ export default function TeamWorkspace() {
                       placeholder="Paste your invitation code"
                     />
                   </label>
-                  <button disabled={busy}>Request admin approval</button>
+                  <button disabled={busy}>Join team</button>
                 </form>
               </section>
             </div>

@@ -6,7 +6,7 @@ const admin = "10000000-0000-4000-8000-000000000001",
   other = "10000000-0000-4000-8000-000000000002",
   applicant = "10000000-0000-4000-8000-000000000003",
   rejected = "10000000-0000-4000-8000-000000000004";
-test("internal access requires matching invitation, confirmed email and separate administrator approval", async () => {
+test("access migrations enforce private teams and allow open registration without approval", async () => {
   const db = new PGlite();
   try {
     await db.exec(`create role anon; create role authenticated; create role supabase_auth_admin; create schema auth;
@@ -224,6 +224,69 @@ test("internal access requires matching invitation, confirmed email and separate
     );
     await as(other, "other@example.com");
     assert.equal((await one("select count(*)::int as n from properties")).n, 0);
+    await db.exec("reset role");
+    await db.exec(
+      await readFile(
+        new URL(
+          "../supabase/migrations/0010_open_registration.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
+    const newcomer = "10000000-0000-4000-8000-000000000099";
+    await db.exec("set role supabase_auth_admin");
+    await db.query(
+      "insert into auth.users(id,email,email_confirmed_at) values($1,'public@example.com',now())",
+      [newcomer],
+    );
+    await as(newcomer, "public@example.com");
+    assert.equal((await one("select count(*)::int as n from properties")).n, 0);
+    const ownTeam = (await one("select create_team('New private team') as id"))
+      .id;
+    await db.query(
+      "insert into properties(name,team_id) values('Own property',$1)",
+      [ownTeam],
+    );
+    assert.equal((await one("select count(*)::int as n from properties")).n, 1);
+    await assert.rejects(
+      db.query("insert into properties(name,team_id) values('Forbidden',$1)", [
+        team,
+      ]),
+      /row-level security/,
+    );
+    await as(admin, "admin@example.com");
+    const publicInvite = (
+      await one("select invite_team_member($1,'public@example.com') as token", [
+        team,
+      ])
+    ).token;
+    await as(other, "other@example.com");
+    await assert.rejects(
+      db.query("select accept_team_invite($1)", [publicInvite]),
+      /invited email/,
+    );
+    await as(newcomer, "public@example.com");
+    await db.query("select accept_team_invite($1)", [publicInvite]);
+    assert.equal(
+      (
+        await one(
+          "select role from team_members where team_id=$1 and user_id=$2",
+          [team, newcomer],
+        )
+      ).role,
+      "member",
+    );
+    assert.equal((await one("select count(*)::int as n from properties")).n, 2);
+    await assert.rejects(
+      db.query("select review_registration($1,true)", [invite2]),
+      /permission denied/,
+    );
+    await as(null, null);
+    await assert.rejects(
+      db.query("select * from properties"),
+      /permission denied/,
+    );
   } finally {
     await db.close();
   }
