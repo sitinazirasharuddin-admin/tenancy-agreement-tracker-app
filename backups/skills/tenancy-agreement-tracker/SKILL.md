@@ -1,72 +1,56 @@
 ---
 name: tenancy-agreement-tracker
-description: Help operate, troubleshoot, or develop Nazira's Tenancy Agreement Tracker, including private team workspaces, property and tenant setup, agreement status progression, stamping records, and follow-up actions. Use for this existing app rather than unrelated tenancy drafting or legal stamping advice.
+description: Operate, troubleshoot, or develop Nazira's existing Tenancy Agreement Tracker, including private team access, agreements, property folders, submission tracking and yearly rental rates. Use for this app, not general tenancy drafting or legal advice.
 ---
 
 # Tenancy Agreement Tracker
 
-## Project context
+## Locate the existing project
+- Live app: https://tenancy-agreement-tracker-app.vercel.app/
+- GitHub: https://github.com/sitinazirasharuddin-admin/tenancy-agreement-tracker-app
+- Checkout: `C:/Users/nazira/Documents/Codex/2026-09-30/clone-https-github-com-sitinazirasharuddin-admin/work/tenancy-agreement-tracker-app`
+- Business folder: `C:/Users/nazira/OneDrive - Selangor Properties Sdn Bhd/Documents/02 DATA/Tenant`
+- User skill archive: `C:/Users/nazira/OneDrive - Selangor Properties Sdn Bhd/Documents/04 SKILLS`
+- Stack: Next.js App Router, TypeScript, Supabase PostgreSQL/Auth and Vercel. Supabase project `tkuloxeyzpzldgkqqrzy`; Vercel scope `leasing2`.
 
-- App: https://tenancy-agreement-tracker-app.vercel.app/
-- Repository: https://github.com/sitinazirasharuddin-admin/tenancy-agreement-tracker-app
-- Stack: Next.js App Router, TypeScript, Supabase PostgreSQL/Auth, Vercel.
-- Existing private workspace: **Leasing Team**. The user wants only one Leasing Team; do not create a duplicate as a workaround.
-- Portfolio: **Menara Millenium**, **The five**, **The Stories of Taman Tunku**.
-- User-selected appearance: **Candy** design, with pink/purple accents, rounded cards, property photos and mobile navigation. Preserve this choice unless asked to change it.
-- Business files: `C:\Users\nazira\OneDrive - Selangor Properties Sdn Bhd\Documents\02 DATA\Tenant`.
-- Companion mockups: `Team Workspace\team-workspace-mockups.html` inside that Tenant folder; online preview at `/mockups`.
+These are last-known locations, not evidence of current health or authentication. Inspect the checkout and Git status before changing it. Read AGENTS.md and relevant docs. Later user decisions below supersede the original demo-first PRD. Use the language requested by the user and simple operating steps.
 
-Treat these as project context, not proof that the current deployment, authentication session or database is healthy. Inspect current state when troubleshooting.
+## Preserve the user's app decisions
+- One active **Leasing Team** workspace; do not create duplicate teams to work around errors.
+- Candy appearance: pink/purple, rounded cards, property photos and responsive mobile navigation.
+- Properties are folders: open a property to see its units and related tenants/agreements. The standalone Tenants navigation was removed.
+- New TA accepts manually entered tenant and unit names, reusing or creating scoped records. Property remains selected from existing properties.
+- Actions automatically lists the same agreements as the dashboard. Its submission-completed checkbox is independent of the agreement's workflow status; do not require duplicate data entry.
+- Stamping due date = stamping submission date + configurable calendar days, default **14**. No submission date means no due date. This is the user's operational rule, not a claim about statutory deadlines. Display submission date and bold due date.
+- Rental fields are monthly RM rates for **Year 1, Year 2 and Year 3**, not annual totals. `monthly_rental` remains Year 1; `monthly_rental_year_2` and `monthly_rental_year_3` are optional, non-negative numeric values. Preserve existing Year 1 values. `total_square_feet` stores optional non-negative floor area. Include these in New/Edit, details, Actions details and CSV.
 
-## Help the user operate the app
+## Registration and team access
+- User reversed invitation-only registration on 6 November 2026. Migration 0010 removes the signup invitation trigger and separate admin approval. Anyone can register, confirm their email and create a private workspace.
+- Registration alone never grants access to the existing Leasing Team. Its records remain protected by team membership RLS.
+- Admins can invite staff to their existing team; a confirmed user with the matching email can accept a valid invitation directly as a member, without further approval. Existing pending applicants can accept a still-valid code; expired codes need replacement.
+- Members can add/edit business records; admins manage members/invitations and delete business records.
+- Anonymous business data access and public demo routes stay closed. Do not confuse open signup with public company data.
+- Invitation links are shared manually; creating one does not send an email. Do not send messages without explicit authorization.
 
-Use simple English and short, concrete steps. The normal setup order is:
+## Implementation map
+- `components/team-workspace.tsx`: authentication, invitations and approval screens.
+- `lib/teams/index.ts`: team queries and helpers.
+- `components/tracker.tsx`: forms, dashboard, workflow, details and CSV.
+- `components/property-folders.tsx`: property units and linked tenants.
+- `components/submission-checklist.tsx`: automatic Actions list and completion tick.
+- `lib/data/domain.ts`: validation and workflow/date calculations.
+- `lib/data/manual.ts`: manual tenant/unit creation and reuse.
+- `lib/data/index.ts`: persistence.
+- `supabase/migrations`: additive schema history; never rewrite a deployed migration.
+- Migration 0005 adds submission completion; 0006 configurable stamping dates; 0007 rental/area; 0008 invitation/admin approval lockdown; 0009 rental Years 2 and 3.
 
-1. Open the app and sign in with the user's existing company account. Let the user enter their password; never save credentials in this skill or a project file.
-2. Open the existing Leasing Team. A remembered team may open automatically.
-3. Under Properties, check the existing buildings and create their units.
-4. Under Tenants, add the tenant and relevant company/contact details.
-5. Select New TA; choose the tenant, property and unit, enter a unique reference and person in charge, then save.
-6. Move the agreement through preparation, pending signing, signed, stamping submitted, stamping completed, payment pending and completed.
-7. Add outstanding actions with descriptions, due dates and priorities as needed.
+## Change and verify
+Build on existing tables and preserve private-team RLS. Generic agreement edits intentionally omit `submission_completed` to avoid overwriting a newer checkbox change. Keep real company data out of test fixtures. Use disposable synthetic records for mutation tests.
 
-The app calculates its stamping due date as signing date plus 30 calendar days. Describe this as the application's configured calculation, not legal advice or a verified statutory deadline.
+Run relevant tests, normally `node --test tests/workflow.test.mjs tests/teams.test.mjs tests/internal-access.test.mjs`, and `node node_modules/next/dist/bin/next build`. Do not run dev and build simultaneously against the same .next directory. Verify the changed UI and save behavior; distinguish local tests from production checks. Apply required migrations before deploying code that writes the new columns.
 
-Workflow buttons may open a guided editor to collect missing signing date, stamping submission date, fee or payment details. A zero fee is valid when it matches the actual record. Completion requires the applicable details, payment marked Paid or N/A, and confirmation; linked outstanding actions then close automatically.
+When deployment is in scope, commit and push the intended changes to main so GitHub triggers Vercel. Do not use `vercel deploy`. Verify the deployment is Ready and uses the production alias. Git identity: `sitinazirasharuddin-admin`, `335818130+sitinazirasharuddin-admin@users.noreply.github.com`. Use existing environment configuration; never print or commit secrets, credentials or CLI authentication stores.
 
-Use the private workspace for actual business data. `/demo` contains shared public sample data and is not a place to enter company records. Invitation links are shared manually by an admin; creating a link does not mean an email was sent. Do not send invitations or messages unless the user authorizes the recipients and action.
+GitHub contains source and migration history, not automatically live Supabase rows, auth users or storage. Repository was last known public; recheck visibility before backup, and keep P&C records out of public Git. MCP access from ChatGPT Work/Claude Cowork was requested historically but not completed; installed SDK dependencies do not prove a working connection.
 
-## Develop or repair the existing app
-
-Locate the existing checkout before cloning again. The last known checkout is:
-`C:\Users\nazira\Documents\Codex\2026-09-30\clone-https-github-com-sitinazirasharuddin-admin\work\tenancy-agreement-tracker-app`.
-
-Read the checkout's AGENTS.md and relevant docs before coding. The PRD success scenario is the acceptance criterion: create an agreement against real property/unit/tenant records, enter signing date, see the calculated deadline, create a follow-up, record stamping details and payment, complete the agreement, and see zero open actions. Preserve private-team isolation and admin/member roles.
-
-Useful source map:
-
-- `components/team-workspace.tsx`: authentication, team selection, settings and invitations.
-- `components/tracker.tsx`: dashboard, CRUD forms, agreement workflow, actions and mobile navigation.
-- `lib/data/index.ts`: database reads and writes.
-- `lib/data/domain.ts`: validation, dates, urgency and workflow requirements.
-- `lib/teams/index.ts`: team helpers and initial portfolio names.
-- `app/globals.css` and `app/candy.css`: base layout and selected Candy theme.
-- `supabase/migrations`: schema and policies. Inspect applied migrations; add a new migration for schema changes rather than rewriting deployed migrations.
-- `app/mockups/page.tsx` and `export-mockups.cjs`: companion previews.
-
-Build functional screens against the existing tables; do not replace real records with reference-design sample data or add nonfunctional controls. Reuse the supplied property photos only for the matching properties, and use a neutral placeholder for others.
-
-When deployment is within the current request's scope, follow the repository's Git deployment process. Use the configured Git identity, commit and push to main, then verify Vercel is Ready and the production alias points to that release. Do not use `vercel deploy` to bypass Git. Pull the existing Vercel environment when necessary; never print tokens or copy environment secrets into documentation.
-
-Verification normally includes the production build and the existing workflow/team tests. Use the disposable local database fixture for browser mutations, clearly distinguishing synthetic records from production. Confirm the changed behavior on desktop and mobile. Do not claim successful SMTP delivery, password reset, live private CRUD or deployment without checking the relevant result.
-
-## Known limitations to recheck
-
-As of 30 September 2026:
-
-- Simultaneous full-record edits can overwrite another staff member's changes. Until conflict protection is implemented and tested, advise staff to avoid editing the same agreement at the same time.
-- Team creation and optional initial-property insertion are separate requests; a property failure may leave a created team. Inspect and repair the existing team rather than creating a duplicate.
-- Microsoft 365 SMTP configuration was saved, but actual delivery was not verified. Successful sign-in is not evidence of email delivery.
-- Guided workflow forms, remembered team selection and recovery-URL cleanup were deployed in commit `9453057`; Candy styling was deployed in `77c56a0`. Verify current code before treating these as unresolved bugs.
-
-Saving this skill does not authorize future deployments, account changes, data deletion or disclosure. Follow the user's current task scope and verify business-impacting changes before reporting completion.
+This skill captures project knowledge, not the running app or a complete data backup. It does not authorize unrelated deployments, messages, account changes or data deletion. Last recorded feature release: `9075750` (open signup, private teams); verify current HEAD rather than assuming it remains latest.
