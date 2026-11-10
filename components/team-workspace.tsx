@@ -265,9 +265,9 @@ export default function TeamWorkspace() {
                     ? "Choose a new password"
                     : "Welcome back"}
             </h2>
-            <p className="muted">
+            <p className="muted" hidden={mode === "signup"}>
               {mode === "signup"
-                ? "Anyone can register. Confirm your email to get started."
+                ? ""
                 : mode === "reset"
                   ? "We’ll email a secure reset link."
                   : "Sign in to your team’s private workspace."}
@@ -336,9 +336,6 @@ export default function TeamWorkspace() {
                 </button>
               )}
             </div>
-            <p className="muted">
-              Open registration. Each team’s records remain private.
-            </p>
           </div>
         </section>
       </div>
