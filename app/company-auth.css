@@ -199,3 +199,12 @@ main.company-auth {
 .company-password-rules li > span:first-child { display: inline-block; width: 20px; }
 .company-password-rules .met { color: #167447; }
 @media (max-width: 360px) { .company-name-fields { grid-template-columns: 1fr; } }
+
+@media (min-width: 601px) and (max-height: 760px) {
+  .company-signup .company-auth-card { padding-top: 12px; padding-bottom: 12px; }
+  .company-signup input { height: 44px; }
+  .company-signup form { gap: 8px; margin-top: 10px; }
+  .company-signup .company-switch { margin-top: 8px; }
+  .company-signup .company-help { margin: 6px 0; }
+  .company-signup h1 { margin-bottom: 6px; }
+}

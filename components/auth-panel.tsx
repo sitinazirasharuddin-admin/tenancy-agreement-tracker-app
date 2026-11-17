@@ -28,7 +28,7 @@ export default function AuthPanel({
     onMode(next);
   };
   return (
-    <main className="company-auth">
+    <main className={`company-auth${mode === "signup" ? " company-signup" : ""}`}>
       <section className="company-auth-card" aria-labelledby="auth-title">
         <div
           className="company-logo"
