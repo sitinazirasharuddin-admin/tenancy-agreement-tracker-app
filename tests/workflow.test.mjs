@@ -48,11 +48,18 @@ test("manual tenant/unit entry reuses matches only within the selected property"
   );
 });
 import {
+  statuses,
   stampingDue,
   overdue,
   urgency,
   missingWorkflowDetails,
 } from "../lib/data/domain.ts";
+
+test("payment comes before stamping completion in the guided workflow", () => {
+  assert.equal(statuses[statuses.indexOf("stamping_submitted") + 1], "payment_pending");
+  assert.equal(statuses[statuses.indexOf("payment_pending") + 1], "stamping_completed");
+  assert.equal(statuses[statuses.indexOf("stamping_completed") + 1], "completed");
+});
 
 test("guided workflow collects missing details and accepts zero fees and N/A payment", () => {
   assert.deepEqual(missingWorkflowDetails({}, "pending_signing"), []);
@@ -97,8 +104,9 @@ test("stamping flags and urgency distinguish completed stamping and due boundari
   assert.equal(overdue(ta, "2026-09-30"), true);
   assert.equal(
     overdue({ ...ta, status: "payment_pending" }, "2026-09-30"),
-    false,
+    true,
   );
+  assert.equal(overdue({ ...ta, status: "stamping_completed" }, "2026-09-30"), false);
   assert.equal(
     urgency(
       { id: "a", due_date: "2026-09-29", priority: "high" },

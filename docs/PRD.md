@@ -15,7 +15,7 @@ Leasing Department staff managing multiple TAs across different properties — r
 
 ## MVP (v1) — Must-Haves
 - [ ] Create, view, edit, delete a TA record with all core fields
-- [ ] Status workflow: preparation → pending_signing → signed → stamping_submitted → stamping_completed → payment_pending → completed
+- [ ] Status workflow: preparation → pending_signing → signed → stamping_submitted → payment_pending → stamping_completed → completed
 - [ ] Auto-calculate stamping due date (signing date + 30 days)
 - [ ] Outstanding actions: create, complete, filter by TA
 - [ ] Dashboard: all TAs with status badges, overdue stamping in red, open action count

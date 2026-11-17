@@ -3,8 +3,8 @@ export const statuses = [
   "pending_signing",
   "signed",
   "stamping_submitted",
-  "stamping_completed",
   "payment_pending",
+  "stamping_completed",
   "completed",
 ] as const;
 export type Row = {
@@ -91,7 +91,7 @@ export function overdue(ta: Row, date = today()) {
   return (
     !!ta.stamping_due_date &&
     String(ta.stamping_due_date) < date &&
-    !["stamping_completed", "payment_pending", "completed"].includes(
+    !["stamping_completed", "completed"].includes(
       String(ta.status),
     )
   );
