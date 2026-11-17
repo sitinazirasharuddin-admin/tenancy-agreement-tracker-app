@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./candy.css";
+import "./company-auth.css";
 
 export const metadata: Metadata = {
   title: "Tenancy | Agreement Tracker",

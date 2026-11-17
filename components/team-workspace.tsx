@@ -11,6 +11,7 @@ import {
   type Invite,
 } from "@/lib/teams";
 import Tracker from "./tracker";
+import AuthPanel from "./auth-panel";
 export default function TeamWorkspace() {
   const [user, setUser] = useState<User | null>(null),
     [ready, setReady] = useState(false),
@@ -221,125 +222,7 @@ export default function TeamWorkspace() {
         Opening your workspace…
       </div>
     );
-  if (!user || mode === "password")
-    return (
-      <div className="auth-shell">
-        <section className="auth-story">
-          <a href="/" className="auth-brand">
-            ▦ Tenancy<span>TEAM WORKSPACE</span>
-          </a>
-          <p className="eyebrow">ONE TEAM. EVERY AGREEMENT.</p>
-          <h1>
-            A clearer way
-            <br />
-            to lease together.
-          </h1>
-          <p>
-            From the first draft to the final stamp, give your team one place to
-            move work forward.
-          </p>
-          <div className="auth-preview">
-            <span>GET STARTED</span>
-            {[
-              "Create your account",
-              "Confirm your email",
-              "Create a workspace or join your team",
-            ].map((step, i) => (
-              <div key={step}>
-                <b>0{i + 1}</b>
-                <p>{step}</p>
-              </div>
-            ))}
-          </div>
-          <small>Private workspaces. Shared progress. Clear ownership.</small>
-        </section>
-        <section className="auth-form-area">
-          <div className="auth-form">
-            <span className="tag">BUILT FOR LEASING TEAMS</span>
-            <h2>
-              {mode === "signup"
-                ? "Create your account"
-                : mode === "reset"
-                  ? "Reset your password"
-                  : mode === "password"
-                    ? "Choose a new password"
-                    : "Welcome back"}
-            </h2>
-            <p className="muted" hidden={mode === "signup"}>
-              {mode === "signup"
-                ? ""
-                : mode === "reset"
-                  ? "We’ll email a secure reset link."
-                  : "Sign in to your team’s private workspace."}
-            </p>
-            {feedback}
-            <form onSubmit={authSubmit}>
-              {mode !== "password" && (
-                <label>
-                  Email address
-                  <input
-                    required
-                    type="email"
-                    name="email"
-                    autoComplete="email"
-                    placeholder="you@company.com"
-                  />
-                </label>
-              )}
-              {mode !== "reset" && (
-                <label>
-                  Password
-                  <input
-                    required
-                    type="password"
-                    name="password"
-                    minLength={8}
-                    autoComplete={
-                      mode === "login" ? "current-password" : "new-password"
-                    }
-                    placeholder="At least 8 characters"
-                  />
-                </label>
-              )}
-              <button className="primary" disabled={busy}>
-                {busy
-                  ? "Please wait…"
-                  : mode === "signup"
-                    ? "Create account"
-                    : mode === "reset"
-                      ? "Send reset link"
-                      : mode === "password"
-                        ? "Save password"
-                        : "Sign in →"}
-              </button>
-            </form>
-            <div className="auth-links">
-              {mode === "login" ? (
-                <>
-                  <button
-                    className="link"
-                    onClick={() => {
-                      setMode("signup");
-                      setError("");
-                      setNotice("");
-                    }}
-                  >
-                    Create an account
-                  </button>
-                  <button className="link" onClick={() => setMode("reset")}>
-                    Forgot password?
-                  </button>
-                </>
-              ) : (
-                <button className="link" onClick={() => setMode("login")}>
-                  Back to sign in
-                </button>
-              )}
-            </div>
-          </div>
-        </section>
-      </div>
-    );
+  if (!user || mode === "password") return <AuthPanel mode={mode} busy={busy} feedback={feedback} onSubmit={authSubmit} onMode={(next)=>{setMode(next);setError("");setNotice("");}} />;
   if (selected && !settings)
     return (
       <>

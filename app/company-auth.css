@@ -1,0 +1,184 @@
+/* Company login, scoped independently from the workspace theme. */
+.company-auth {
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f4f4f4;
+  padding: 40px 20px;
+  color: #26364a;
+}
+.company-auth .company-auth-card {
+  width: 100%;
+  max-width: 550px;
+  padding: 47px 43px 38px;
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 18px 40px #25365008;
+  text-align: center;
+}
+.company-logo {
+  width: 124px;
+  height: 100px;
+  margin: 0 auto 30px;
+  background: white url("/login-brand-reference.png") no-repeat -265px -89px /
+    637px 985px;
+}
+.company-auth h1 {
+  margin: 0 0 10px;
+  font-size: 29px;
+  line-height: 1.25;
+  font-weight: 500;
+  letter-spacing: -0.5px;
+  color: #26364a;
+}
+.company-auth .company-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #4b6078;
+}
+.company-auth .company-intro {
+  margin: 38px 0;
+  font-size: 17px;
+  color: #4b6078;
+  line-height: 1.5;
+}
+.company-auth form {
+  margin-top: 38px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  text-align: left;
+}
+.company-auth label {
+  display: block;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #334155;
+}
+.company-auth input {
+  display: block;
+  width: 100%;
+  height: 61px;
+  min-width: 0;
+  margin-top: 11px;
+  padding: 16px;
+  border: 1px solid #94a8c4;
+  border-radius: 8px;
+  background: white;
+  color: #26364a;
+  font: inherit;
+  box-shadow: none;
+}
+.company-auth input::placeholder {
+  color: #929ca9;
+}
+.company-auth input:focus {
+  outline: 3px solid #de222226;
+  outline-offset: 2px;
+  border-color: #d92329;
+}
+.company-password {
+  position: relative;
+}
+.company-password input {
+  padding-right: 72px;
+}
+.company-auth .company-password button {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 8px;
+  color: #46586a;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 4px;
+}
+.company-auth .company-forgot {
+  align-self: flex-end;
+  margin-top: -18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #4b6078;
+  font-size: 16px;
+}
+.company-auth .company-submit {
+  width: 100%;
+  height: 64px;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: #e42125;
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  box-shadow: none;
+}
+.company-auth .company-submit:hover {
+  background: #c81c20;
+}
+.company-auth button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.company-auth button:focus-visible {
+  outline: 3px solid #94a8c4;
+  outline-offset: 3px;
+}
+.company-auth .company-switch {
+  display: inline-block;
+  margin-top: 45px;
+  border: 0;
+  border-radius: 0;
+  padding: 4px 0;
+  background: transparent;
+  box-shadow: none;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  color: #46586a;
+  font-size: 16px;
+  font-weight: 600;
+}
+.company-auth .company-help {
+  color: #4b6078;
+  margin: 23px 0 30px;
+  font-size: 16px;
+}
+.company-auth footer {
+  color: #8a9cba;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.company-auth .alert {
+  margin-top: 24px;
+  text-align: left;
+}
+@media (max-width: 600px) {
+  .company-auth {
+    padding: 20px 14px;
+  }
+  .company-auth .company-auth-card {
+    padding: 32px 24px;
+  }
+  .company-auth h1 {
+    font-size: 25px;
+  }
+  .company-auth .company-intro {
+    margin: 28px 0;
+  }
+}
+
+main.company-auth {
+  margin: 0;
+  width: 100%;
+  max-width: none;
+}
