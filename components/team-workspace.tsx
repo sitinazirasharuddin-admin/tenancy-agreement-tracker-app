@@ -129,6 +129,11 @@ export default function TeamWorkspace() {
               email,
               password,
               options: {
+                data: {
+                  first_name: String(form.get("first_name") ?? "").trim(),
+                  last_name: String(form.get("last_name") ?? "").trim(),
+                  full_name: [form.get("first_name"), form.get("last_name")].map((value) => String(value ?? "").trim()).join(" "),
+                },
                 emailRedirectTo: window.location.origin + "/auth/callback",
               },
             })

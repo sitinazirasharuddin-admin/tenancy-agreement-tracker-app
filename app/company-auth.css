@@ -193,3 +193,9 @@ main.company-auth {
  .company-auth .company-switch { margin-top: 12px; }
  .company-auth .company-help { margin: 8px 0; }
 }
+
+.company-name-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.company-auth .company-password-rules { list-style: none; padding: 0; margin: -4px 0 0; color: #4b6078; font-size: 13px; line-height: 1.6; }
+.company-password-rules li > span:first-child { display: inline-block; width: 20px; }
+.company-password-rules .met { color: #167447; }
+@media (max-width: 360px) { .company-name-fields { grid-template-columns: 1fr; } }
