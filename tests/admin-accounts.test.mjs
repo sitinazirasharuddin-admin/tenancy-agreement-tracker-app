@@ -18,8 +18,13 @@ test("admin accounts are atomic, reject public signup and gate data until passwo
  await db.exec(await readFile(new URL('../supabase/migrations/0012_admin_accounts.sql',import.meta.url),'utf8'));
  await assert.rejects(db.exec(`insert into auth.users(id,email) values('${member}','member@example.test')`),/administrator/);
  await assert.rejects(db.exec(`insert into auth.users(id,email,raw_user_meta_data) values('${member}','member@example.test','{"provisioned_by":"${admin}","provisioned_team":"${team}"}')`),/administrator/);
+ await db.exec(await readFile(new URL('../supabase/migrations/0013_defer_admin_provisioning.sql',import.meta.url),'utf8'));
  const metadata={provisioned_by:admin,provisioned_team:team,provisioned_role:'member',must_change_password:true,password_reset_nonce:'first'};
- await db.query('insert into auth.users(id,email,encrypted_password,raw_app_meta_data) values($1,$2,$3,$4)',[member,'member@example.test','hash1',metadata]);
+ await db.transaction(async tx=>{
+ await tx.query('insert into auth.users(id,email,encrypted_password) values($1,$2,$3)',[member,'member@example.test','hash1']);
+ await tx.query('update auth.users set raw_app_meta_data=$1 where id=$2',[metadata,member]);
+ });
+ await assert.rejects(db.exec(`insert into auth.users(id,email) values('10000000-0000-4000-8000-000000000004','public@example.test')`),/administrator/);
  assert.equal((await db.query('select count(*)::int as n from team_members')).rows[0].n,2);
  await db.exec(`select set_config('request.jwt.claim.sub','${member}',false)`);
  assert.equal((await db.query(`select is_team_member('${team}') as allowed`)).rows[0].allowed,false);
@@ -37,3 +42,4 @@ test("admin accounts are atomic, reject public signup and gate data until passwo
  assert.equal((await db.query('select count(*)::int as n from auth.users')).rows[0].n,2);
  }finally{await db.close();}
 });
+
