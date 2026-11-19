@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   if (typeof teamId !== "string" || !/^[0-9a-f-]{36}$/i.test(teamId)) return fail("Choose a team.",400);
   const {data:allowed,error}=await db.rpc("is_team_admin",{team:teamId});
   if(error || allowed !== true) return fail("Only this team's administrators can manage accounts.",403);
-  const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key=process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if(!key) return fail("Account management is not configured. Contact your administrator.",503);
   const admin=createAdmin(process.env.NEXT_PUBLIC_SUPABASE_URL!,key,{auth:{persistSession:false,autoRefreshToken:false}});
   const password=body.password;
@@ -38,4 +38,23 @@ export async function POST(request: NextRequest) {
   const {error:createError}=await admin.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{full_name:name},app_metadata:{provisioned_by:user.id,provisioned_team:teamId,provisioned_role:role,must_change_password:true,password_reset_nonce:randomUUID()}});
   if(createError) return fail(createError.code==="email_exists" || createError.message.includes("already")?"An account already exists for this email. No password or access was changed.":"Account creation failed. Check that the admin-account database migration is installed and try again.",400);
   return NextResponse.json({message:"Account created and added to this team. Share the username and temporary password privately. The user must change the password at first sign-in."},{status:201});
+}
+
+// Read-only readiness check, restricted to existing team administrators.
+export async function GET() {
+ const db=await createClient();
+ const {data:{user},error}=await db.auth.getUser();
+ if(error||!user) return NextResponse.json({error:"Sign in first."},{status:401});
+ if(user.app_metadata.must_change_password) return NextResponse.json({error:"Change your password first."},{status:403});
+ const {data:members}=await db.from("team_members").select("team_id").eq("user_id",user.id).eq("role","admin");
+ if(!members?.length) return NextResponse.json({error:"Administrator access required."},{status:403});
+ const key=process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+ if(!key) return NextResponse.json({ready:false,reason:"missing_server_key"},{status:503});
+ const jwtParts=key.split(".");
+ let role="";
+ try {if(jwtParts.length===3)role=JSON.parse(Buffer.from(jwtParts[1],"base64url").toString()).role;}catch{}
+ if(!key.startsWith("sb_secret_")&&role!=="service_role") return NextResponse.json({ready:false,reason:"incorrect_server_key"},{status:503});
+ const admin=createAdmin(process.env.NEXT_PUBLIC_SUPABASE_URL!,key,{auth:{persistSession:false,autoRefreshToken:false}});
+ const {error:checkError}=await admin.auth.admin.listUsers({page:1,perPage:1});
+ return NextResponse.json(checkError?{ready:false,reason:"server_key_rejected",code:checkError.code,status:checkError.status}:{ready:true},{status:checkError?503:200,headers:{"Cache-Control":"no-store"}});
 }
