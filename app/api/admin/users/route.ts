@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   if(!key) return fail("Account management is not configured. Contact your administrator.",503);
   const admin=createAdmin(process.env.NEXT_PUBLIC_SUPABASE_URL!,key,{auth:{persistSession:false,autoRefreshToken:false}});
   const password=body.password;
-  if(typeof password!=="string" || password.length<12 || password.length>128 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) return fail("Use a temporary password of 12–128 characters with uppercase, lowercase and a number.",400);
+  if(typeof password!=="string" || password.length<8 || password.length>12 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) return fail("Use a temporary password of 8–12 characters with uppercase, lowercase and a number.",400);
   if(action==="reset") {
     if(typeof userId!=="string" || userId===user.id) return fail("Choose another managed team member.",400);
     const {data:member}=await db.from("team_members").select("user_id").eq("team_id",teamId).eq("user_id",userId).maybeSingle();
