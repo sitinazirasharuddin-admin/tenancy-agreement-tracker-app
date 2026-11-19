@@ -12,6 +12,7 @@ import {
 } from "@/lib/teams";
 import Tracker from "./tracker";
 import AuthPanel from "./auth-panel";
+import { authErrorMessage } from "@/lib/auth-errors";
 export default function TeamWorkspace() {
   const [user, setUser] = useState<User | null>(null),
     [ready, setReady] = useState(false),
@@ -145,7 +146,7 @@ export default function TeamWorkspace() {
             : mode === "password"
               ? await db.auth.updateUser({ password })
               : await db.auth.signInWithPassword({ email, password });
-      if (result.error) throw new Error(result.error.message);
+      if (result.error) throw new Error(authErrorMessage(result.error, mode));
       if (mode === "signup") {
         setNotice(
           "Check your email to confirm your account, then sign in. No administrator approval is required.",
