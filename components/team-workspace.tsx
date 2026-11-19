@@ -12,6 +12,8 @@ import {
 } from "@/lib/teams";
 import Tracker from "./tracker";
 import AuthPanel from "./auth-panel";
+import AdminUsers, { ResetUserPassword } from "./admin-users";
+import FirstPassword from "./first-password";
 import { authErrorMessage } from "@/lib/auth-errors";
 export default function TeamWorkspace() {
   const [user, setUser] = useState<User | null>(null),
@@ -62,7 +64,7 @@ export default function TeamWorkspace() {
     setInviteCode(pendingInvite);
     if (pendingInvite) {
       sessionStorage.setItem("tenancy-invite", pendingInvite);
-      setMode("signup");
+      setMode("login");
     }
     if (params.get("recovery") === "1") setMode("password");
     if (params.get("auth_error"))
@@ -119,26 +121,14 @@ export default function TeamWorkspace() {
   }
   async function authSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (mode === "signup") { setError("Ask your team administrator to create your account."); return; }
     const form = new FormData(e.currentTarget);
     const email = String(form.get("email") ?? "").trim(),
       password = String(form.get("password") ?? "");
     await run(async () => {
       const db = createClient();
       const result =
-        mode === "signup"
-          ? await db.auth.signUp({
-              email,
-              password,
-              options: {
-                data: {
-                  first_name: String(form.get("first_name") ?? "").trim(),
-                  last_name: String(form.get("last_name") ?? "").trim(),
-                  full_name: [form.get("first_name"), form.get("last_name")].map((value) => String(value ?? "").trim()).join(" "),
-                },
-                emailRedirectTo: window.location.origin + "/auth/callback",
-              },
-            })
-          : mode === "reset"
+        mode === "reset"
             ? await db.auth.resetPasswordForEmail(email, {
                 redirectTo:
                   window.location.origin + "/auth/callback?recovery=1",
@@ -147,11 +137,6 @@ export default function TeamWorkspace() {
               ? await db.auth.updateUser({ password })
               : await db.auth.signInWithPassword({ email, password });
       if (result.error) throw new Error(authErrorMessage(result.error, mode));
-      if (mode === "signup") {
-        setNotice(
-          "Check your email to confirm your account, then sign in. No administrator approval is required.",
-        );
-      }
       if (mode === "reset")
         setNotice(
           "If this account exists, a password reset link has been sent.",
@@ -228,6 +213,7 @@ export default function TeamWorkspace() {
         Opening your workspace…
       </div>
     );
+  if (user?.app_metadata.must_change_password) return <FirstPassword onSignOut={signOut} onDone={async()=>{const {data,error}=await createClient().auth.getUser();if(error)throw error;if(data.user?.app_metadata.must_change_password)throw new Error("Password change is not complete. Please try again.");setUser(data.user);if(data.user)await refreshTeams(data.user.id);}} />;
   if (!user || mode === "password") return <AuthPanel mode={mode} busy={busy} feedback={feedback} onSubmit={authSubmit} onMode={(next)=>{setMode(next);setError("");setNotice("");}} />;
   if (selected && !settings)
     return (
@@ -291,6 +277,7 @@ export default function TeamWorkspace() {
                         : "Team member"}
                     </small>
                   </div>
+                  {selected.role === "admin" && member.user_id !== user.id && <ResetUserPassword teamId={selected.id} userId={member.user_id} />}
                   {selected.role === "admin" ? (
                     <>
                       <select
@@ -338,90 +325,7 @@ export default function TeamWorkspace() {
                 </div>
               ))}
             </section>
-            {selected.role === "admin" && (
-              <section className="panel invite-panel">
-                <h2>Team invitations</h2>
-                <p className="muted">
-                  Create a link for their email address, then share it with
-                  them. They can join after confirming their email, without
-                  another approval. Links expire after seven days.
-                </p>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const f = new FormData(e.currentTarget);
-                    void run(async () => {
-                      await teamRpc("invite_team_member", {
-                        team: selected.id,
-                        invite_email: String(f.get("email")),
-                      });
-                      await refreshPeople();
-                      setNotice(
-                        "Invitation created. Copy its link and share it with your teammate.",
-                      );
-                    });
-                  }}
-                  className="invite-form"
-                >
-                  <label>
-                    Teammate’s email
-                    <input
-                      name="email"
-                      type="email"
-                      required
-                      placeholder="colleague@company.com"
-                    />
-                  </label>
-                  <button className="primary" disabled={busy}>
-                    Create invitation
-                  </button>
-                </form>
-                {invites.map((invite) => (
-                  <div className="invitation" key={invite.id}>
-                    <strong>{invite.email}</strong>
-                    <small>
-                      {new Date(invite.expires_at) < new Date()
-                        ? "Expired"
-                        : "Expires " +
-                          new Date(invite.expires_at).toLocaleDateString()}
-                    </small>
-                    <input
-                      aria-label={`Invitation link for ${invite.email}`}
-                      readOnly
-                      value={`${typeof window === "undefined" ? "" : window.location.origin}/?invite=${invite.token}`}
-                    />
-                    <div className="row-actions">
-                      <button
-                        onClick={() =>
-                          void run(async () => {
-                            await navigator.clipboard.writeText(
-                              `${window.location.origin}/?invite=${invite.token}`,
-                            );
-                            setNotice("Invitation link copied.");
-                          })
-                        }
-                      >
-                        Copy link
-                      </button>
-                      <button
-                        className="danger"
-                        disabled={busy}
-                        onClick={() =>
-                          void run(async () => {
-                            await teamRpc("revoke_team_invite", {
-                              invite_id: invite.id,
-                            });
-                            await refreshPeople();
-                          })
-                        }
-                      >
-                        Revoke
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </section>
-            )}
+            {selected.role === "admin" && <AdminUsers teamId={selected.id} onCreated={refreshPeople} />}
           </>
         ) : (
           <>
@@ -451,64 +355,7 @@ export default function TeamWorkspace() {
                 </button>
               ))}
             </div>
-            {!teams.length && (
-              <div className="onboard-note">
-                Create your own private workspace, or use a team invitation to
-                join an existing workspace.
-              </div>
-            )}
-            <div className="onboard-grid">
-              <section className="panel onboarding">
-                <h2>Create a private workspace</h2>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const name = String(
-                      new FormData(e.currentTarget).get("team_name") ?? "",
-                    ).trim();
-                    void run(async () => {
-                      const id = await teamRpc("create_team", {
-                        team_name: name,
-                      });
-                      const result = await refreshTeams(user.id);
-                      chooseTeam(result.find((t) => t.id === id) ?? null);
-                    });
-                  }}
-                >
-                  <label>
-                    Workspace name
-                    <input
-                      name="team_name"
-                      required
-                      maxLength={120}
-                      placeholder="Your team name"
-                    />
-                  </label>
-                  <button className="primary" disabled={busy}>
-                    Create workspace
-                  </button>
-                </form>
-              </section>
-              <section className="panel onboarding">
-                <h2>Join an existing team</h2>
-                <p className="muted">
-                  Use the invitation code shared by your admin. Sign in with the
-                  email they invited.
-                </p>
-                <form onSubmit={acceptInvite}>
-                  <label>
-                    Invitation code
-                    <input
-                      required
-                      value={inviteCode}
-                      onChange={(e) => setInviteCode(e.target.value)}
-                      placeholder="Paste your invitation code"
-                    />
-                  </label>
-                  <button disabled={busy}>Join team</button>
-                </form>
-              </section>
-            </div>
+            {!teams.length && <p className="onboard-note">No active team access. Contact your administrator.</p>}
           </>
         )}
       </main>

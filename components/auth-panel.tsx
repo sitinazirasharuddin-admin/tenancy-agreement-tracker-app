@@ -134,9 +134,9 @@ export default function AuthPanel({
         <button
           className="company-switch"
           disabled={busy}
-          onClick={() => change(mode === "login" ? "signup" : "login")}
+          onClick={() => change("login")}
         >
-          {mode === "login" ? "New user? Create an account" : mode === "signup" ? "Already have an account? Sign in" : "Back to sign in"}
+          {mode === "login" ? "Accounts are created by your team administrator" : "Back to sign in"}
         </button>
         <p className="company-help">Need help? Contact IT Support</p>
         <footer>
